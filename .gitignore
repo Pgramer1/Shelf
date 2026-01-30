@@ -1,0 +1,142 @@
+# ===========================================
+# SENSITIVE FILES - DO NOT COMMIT
+# ===========================================
+# Application configuration with credentials
+backend/src/main/resources/application.yml
+backend/src/main/resources/application-h2.yml
+backend/src/main/resources/application-*.yml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# ===========================================
+# BACKEND (Java/Maven/Spring Boot)
+# ===========================================
+# Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+**/target/
+*.class
+
+# Maven Wrapper - keep the scripts but not the jar
+# backend/.mvn/ is excluded except for wrapper properties
+backend/.mvn/wrapper/*.jar
+
+# Build outputs
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Log files
+*.log
+backend/logs/
+backend/spring.log
+
+# ===========================================
+# FRONTEND (React/Node.js)
+# ===========================================
+# Dependencies
+frontend/node_modules/
+node_modules/
+**/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+
+# Frontend environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Testing
+frontend/coverage/
+
+# Production
+frontend/build
+
+# ===========================================
+# DATABASE
+# ===========================================
+# H2 Database files
+*.db
+*.mv.db
+*.trace.db
+backend/*.db
+backend/*.mv.db
+
+# PostgreSQL
+*.sql
+*.dump
+
+# ===========================================
+# IDE & EDITOR FILES
+# ===========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+
+# ===========================================
+# OS FILES
+# ===========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+
+# ===========================================
+# TEMPORARY FILES
+# ===========================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache
+
+# ===========================================
+# PACKAGE MANAGER LOCK FILES (Optional)
+# ===========================================
+# Uncomment if you want to ignore lock files
+# frontend/package-lock.json
+# frontend/yarn.lock
+# frontend/pnpm-lock.yaml
