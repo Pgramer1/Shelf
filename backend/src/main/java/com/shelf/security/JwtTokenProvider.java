@@ -17,10 +17,10 @@ import java.util.function.Function;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${spring.security.jwt.secret-key}")
+    @Value("${jwt.secret-key}")
     private String secretKey;
 
-    @Value("${spring.security.jwt.expiration}")
+    @Value("${jwt.expiration}")
     private long jwtExpiration;
 
     public String extractUsername(String token) {
