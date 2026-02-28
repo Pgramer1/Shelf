@@ -7,9 +7,5 @@ target/
 .idea/
 *.iml
 
-# Local config files (contain secrets)
-src/main/resources/application.yml
-src/main/resources/application-h2.yml
-
 # Scripts
 run.cmd
