@@ -64,7 +64,7 @@ Create an account and start adding media!
 - Check if PostgreSQL is running
 - Verify database exists: `\l` in psql
 - Check credentials in application.yml
-- Ensure Java 17+ is installed: `java -version`
+- Ensure Java 21+ is installed: `java -version`
 
 **Frontend won't start:**
 

@@ -1,50 +1,65 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
 import { UserMedia, Status, MediaType } from '../types';
-import { LogOut, Plus, Film, Tv, Gamepad, Book, Star } from 'lucide-react';
+import { LogOut, Plus, Star } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
 
-const statusLabels: Record<string, string> = {
+const typeLabels: Record<string, string> = {
   ALL: 'All',
-  WATCHING: 'Watching',
-  READING: 'Reading',
-  PLAYING: 'Playing',
-  COMPLETED: 'Completed',
-  ON_HOLD: 'On Hold',
-  DROPPED: 'Dropped',
-  PLAN_TO_WATCH: 'Plan to Watch',
-  PLAN_TO_READ: 'Plan to Read',
-  PLAN_TO_PLAY: 'Plan to Play',
+  [MediaType.MOVIE]: 'Movies',
+  [MediaType.TV_SERIES]: 'TV Series',
+  [MediaType.ANIME]: 'Anime',
+  [MediaType.BOOK]: 'Books',
+  [MediaType.GAME]: 'Games',
+};
+
+const statusLabel = (s: string) =>
+  s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+const getStatusTabs = (type: string): string[] => {
+  const base = ['COMPLETED', 'ON_HOLD', 'DROPPED'];
+  switch (type) {
+    case MediaType.BOOK:     return ['READING',  ...base, 'PLAN_TO_READ'];
+    case MediaType.GAME:     return ['PLAYING',  ...base, 'PLAN_TO_PLAY'];
+    case MediaType.MOVIE:
+    case MediaType.TV_SERIES:
+    case MediaType.ANIME:   return ['WATCHING', ...base, 'PLAN_TO_WATCH'];
+    default:                return ['WATCHING', 'READING', 'PLAYING', ...base, 'PLAN_TO_WATCH', 'PLAN_TO_READ', 'PLAN_TO_PLAY'];
+  }
 };
 
 const Shelf: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('ALL');
-  const [shelfData, setShelfData] = useState<UserMedia[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activeType, setActiveType]     = useState<string>('ALL');
+  const [activeStatus, setActiveStatus] = useState<string>('ALL');
+  const [allData, setAllData]           = useState<UserMedia[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  useEffect(() => {
-    loadShelfData();
-  }, [activeTab]);
+  useEffect(() => { loadShelfData(); }, []);
 
   const loadShelfData = async () => {
     setLoading(true);
     try {
-      let data: UserMedia[];
-      if (activeTab === 'ALL') {
-        data = await shelfService.getUserShelf();
-      } else {
-        data = await shelfService.getUserShelfByStatus(activeTab as Status);
-      }
-      setShelfData(data);
+      setAllData(await shelfService.getUserShelf());
     } catch (error) {
       console.error('Failed to load shelf data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const visibleData = allData.filter((item) => {
+    const typeMatch   = activeType   === 'ALL' || item.media.type === activeType;
+    const statusMatch = activeStatus === 'ALL' || item.status === activeStatus;
+    return typeMatch && statusMatch;
+  });
+
+  const handleTypeChange = (type: string) => {
+    setActiveType(type);
+    setActiveStatus('ALL');
   };
 
   const handleDelete = async (id: number) => {
@@ -56,39 +71,46 @@ const Shelf: React.FC = () => {
     }
   };
 
-  const handleUpdate = () => {
-    loadShelfData();
-  };
+  const typeTabs   = ['ALL', ...Object.values(MediaType)];
+  const statusTabs = getStatusTabs(activeType);
 
-  const getMediaTypeIcon = (type: MediaType) => {
-    switch (type) {
-      case MediaType.MOVIE:
-      case MediaType.ANIME:
-        return <Film className="w-4 h-4" />;
-      case MediaType.TV_SERIES:
-        return <Tv className="w-4 h-4" />;
-      case MediaType.GAME:
-        return <Gamepad className="w-4 h-4" />;
-      case MediaType.BOOK:
-        return <Book className="w-4 h-4" />;
-      default:
-        return null;
-    }
+  const countLabel = () => {
+    const typePart   = activeType   === 'ALL' ? 'items' : typeLabels[activeType].toLowerCase();
+    const statusPart = activeStatus === 'ALL' ? '' : ` · ${statusLabel(activeStatus)}`;
+    return `${visibleData.length} ${typePart}${statusPart}`;
   };
-
-  const tabs = ['ALL', 'WATCHING', 'READING', 'PLAYING', 'COMPLETED', 'ON_HOLD', 'DROPPED', 'PLAN_TO_WATCH', 'PLAN_TO_READ', 'PLAN_TO_PLAY'];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: branding */}
+            <div className="flex-shrink-0">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shelf</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Welcome, {user?.username}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{user?.username}</p>
             </div>
-            <div className="flex gap-3">
+
+            {/* Center: type nav */}
+            <nav className="flex items-center gap-1">
+              {typeTabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => handleTypeChange(tab)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    activeType === tab
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {typeLabels[tab]}
+                </button>
+              ))}
+            </nav>
+
+            {/* Right: actions */}
+            <div className="flex-shrink-0 flex gap-2">
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
@@ -106,36 +128,53 @@ const Shelf: React.FC = () => {
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        {/* Secondary: status tabs */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto">
-            {tabs.map((tab) => (
+          <div className="flex gap-1 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-1">
+            {/* All statuses pill */}
+            <button
+              onClick={() => setActiveStatus('ALL')}
+              className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition ${
+                activeStatus === 'ALL'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+              }`}
+            >
+              All
+            </button>
+            {statusTabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${
-                  activeTab === tab
+                onClick={() => setActiveStatus(tab)}
+                className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition ${
+                  activeStatus === tab
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
                 }`}
               >
-                {statusLabels[tab]}
+                {statusLabel(tab)}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Count bar */}
+      {!loading && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            {countLabel()}
+          </p>
+        </div>
+      )}
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
-        ) : shelfData.length === 0 ? (
+        ) : visibleData.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full mb-4">
               <Star className="w-8 h-8 text-gray-400" />
@@ -152,26 +191,22 @@ const Shelf: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {shelfData.map((item) => (
+            {visibleData.map((item) => (
               <MediaCard
                 key={item.id}
                 userMedia={item}
                 onDelete={handleDelete}
-                onUpdate={handleUpdate}
+                onUpdate={loadShelfData}
               />
             ))}
           </div>
         )}
       </main>
 
-      {/* Add Media Modal */}
       {isAddModalOpen && (
         <AddMediaModal
           onClose={() => setIsAddModalOpen(false)}
-          onSuccess={() => {
-            setIsAddModalOpen(false);
-            loadShelfData();
-          }}
+          onSuccess={() => { setIsAddModalOpen(false); loadShelfData(); }}
         />
       )}
     </div>

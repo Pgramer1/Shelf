@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class UserMediaRequest {
 
@@ -24,4 +26,6 @@ public class UserMediaRequest {
 
     private String notes;
     private Boolean isFavorite = false;
+    private LocalDateTime startedAt;
+    private LocalDateTime completedAt;
 }

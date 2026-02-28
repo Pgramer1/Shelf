@@ -80,4 +80,6 @@ export interface UserMediaRequest {
   rating?: number;
   notes?: string;
   isFavorite?: boolean;
+  startedAt?: string;
+  completedAt?: string;
 }

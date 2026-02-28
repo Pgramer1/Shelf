@@ -48,13 +48,19 @@ public class UserMediaService {
         userMedia.setNotes(request.getNotes());
         userMedia.setIsFavorite(request.getIsFavorite());
 
-        if (request.getStatus() == Status.WATCHING ||
+        // startedAt: use provided value, otherwise auto-set when actively consuming
+        if (request.getStartedAt() != null) {
+            userMedia.setStartedAt(request.getStartedAt());
+        } else if (request.getStatus() == Status.WATCHING ||
                 request.getStatus() == Status.READING ||
                 request.getStatus() == Status.PLAYING) {
             userMedia.setStartedAt(LocalDateTime.now());
         }
 
-        if (request.getStatus() == Status.COMPLETED) {
+        // completedAt: use provided value, otherwise auto-set
+        if (request.getCompletedAt() != null) {
+            userMedia.setCompletedAt(request.getCompletedAt());
+        } else if (request.getStatus() == Status.COMPLETED) {
             userMedia.setCompletedAt(LocalDateTime.now());
         }
 
@@ -80,15 +86,19 @@ public class UserMediaService {
         userMedia.setNotes(request.getNotes());
         userMedia.setIsFavorite(request.getIsFavorite());
 
-        // Update timestamps
-        if ((request.getStatus() == Status.WATCHING ||
+        // Update timestamps: prefer explicitly provided values
+        if (request.getStartedAt() != null) {
+            userMedia.setStartedAt(request.getStartedAt());
+        } else if ((request.getStatus() == Status.WATCHING ||
                 request.getStatus() == Status.READING ||
                 request.getStatus() == Status.PLAYING) &&
                 userMedia.getStartedAt() == null) {
             userMedia.setStartedAt(LocalDateTime.now());
         }
 
-        if (request.getStatus() == Status.COMPLETED && userMedia.getCompletedAt() == null) {
+        if (request.getCompletedAt() != null) {
+            userMedia.setCompletedAt(request.getCompletedAt());
+        } else if (request.getStatus() == Status.COMPLETED && userMedia.getCompletedAt() == null) {
             userMedia.setCompletedAt(LocalDateTime.now());
         }
 

@@ -34,7 +34,7 @@ A full-stack web application for tracking your movies, TV series, anime, games, 
 
 ## Prerequisites
 
-- Java 17 or higher
+- Java 21 or higher
 - Maven 3.6+
 - PostgreSQL 12+
 - Node.js 18+ and npm

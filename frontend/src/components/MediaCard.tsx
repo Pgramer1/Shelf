@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { UserMedia, Status } from '../types';
+import { UserMedia, Status, MediaType } from '../types';
 import { shelfService } from '../services/shelfService';
-import { Pencil, Trash2, Star } from 'lucide-react';
+import { Pencil, Trash2, Star, Minus, Plus } from 'lucide-react';
 import EditMediaModal from './EditMediaModal';
 
 interface MediaCardProps {
@@ -13,6 +13,34 @@ interface MediaCardProps {
 const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [localProgress, setLocalProgress] = useState(userMedia.progress);
+  const [updating, setUpdating] = useState(false);
+  const [editingProgress, setEditingProgress] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const handleProgressChange = async (newProgress: number) => {
+    if (newProgress < 0 || newProgress > userMedia.media.totalUnits || updating) return;
+    setLocalProgress(newProgress);
+    setUpdating(true);
+    try {
+      const isNowComplete = newProgress === userMedia.media.totalUnits;
+      await shelfService.updateMedia(userMedia.id, {
+        mediaId: userMedia.media.id,
+        status: isNowComplete ? Status.COMPLETED : userMedia.status === Status.COMPLETED ? Status.WATCHING : userMedia.status,
+        progress: newProgress,
+        rating: userMedia.rating,
+        notes: userMedia.notes,
+        isFavorite: userMedia.isFavorite,
+        startedAt: userMedia.startedAt,
+        completedAt: isNowComplete ? new Date().toISOString() : userMedia.completedAt,
+      });
+      onUpdate();
+    } catch {
+      setLocalProgress(userMedia.progress);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to remove this from your shelf?')) {
@@ -27,7 +55,28 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
     }
   };
 
-  const progressPercentage = (userMedia.progress / userMedia.media.totalUnits) * 100;
+  const statusBadgeClass = () => {
+    switch (userMedia.status) {
+      case Status.COMPLETED: return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case Status.WATCHING: case Status.READING: case Status.PLAYING:
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+      case Status.ON_HOLD: return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
+      case Status.DROPPED: return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  const formatStatus = (s: string) =>
+    s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const progressPercentage = (localProgress / userMedia.media.totalUnits) * 100;
+  const unitLabel = () => {
+    switch (userMedia.media.type) {
+      case MediaType.GAME: return 'hrs';
+      case MediaType.BOOK: return 'pages';
+      default: return 'ep';
+    }
+  };
 
   return (
     <>
@@ -87,11 +136,54 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
             )}
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar + Incrementor */}
           <div className="mb-2">
-            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Progress</span>
-              <span>{userMedia.progress}/{userMedia.media.totalUnits}</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleProgressChange(localProgress - 1)}
+                  disabled={localProgress <= 0 || updating}
+                  className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-30 transition"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                {editingProgress ? (
+                  <input
+                    type="number"
+                    value={editValue}
+                    min={0}
+                    max={userMedia.media.totalUnits}
+                    autoFocus
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => {
+                      const val = Math.min(userMedia.media.totalUnits, Math.max(0, parseInt(editValue) || 0));
+                      setEditingProgress(false);
+                      handleProgressChange(val);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') { setEditingProgress(false); setEditValue(''); }
+                    }}
+                    className="w-16 text-center tabular-nums bg-white dark:bg-gray-700 border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none"
+                  />
+                ) : (
+                  <span
+                    className="w-16 text-center tabular-nums cursor-pointer hover:text-blue-500 transition"
+                    title="Click to edit"
+                    onClick={() => { setEditValue(String(localProgress)); setEditingProgress(true); }}
+                  >
+                    {localProgress}/{userMedia.media.totalUnits} {unitLabel()}
+                  </span>
+                )}
+                <button
+                  onClick={() => handleProgressChange(localProgress + 1)}
+                  disabled={localProgress >= userMedia.media.totalUnits || updating}
+                  className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-30 transition"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
@@ -102,8 +194,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
           </div>
 
           {/* Status Badge */}
-          <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-            {userMedia.status.replace(/_/g, ' ')}
+          <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
+            {formatStatus(userMedia.status)}
           </span>
         </div>
       </div>

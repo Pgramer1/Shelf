@@ -6,6 +6,9 @@ backend/src/main/resources/application.yml
 backend/src/main/resources/application-h2.yml
 backend/src/main/resources/application-*.yml
 
+# Machine-specific run scripts
+backend/run.cmd
+
 # Environment files
 .env
 .env.local

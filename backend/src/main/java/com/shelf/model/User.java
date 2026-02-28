@@ -27,8 +27,11 @@ public class User {
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String passwordHash;
+
+    @Column(unique = true)
+    private String googleId;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
