@@ -1,0 +1,59 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: shelf-db
+    environment:
+      POSTGRES_DB: shelf_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Spring Boot Backend ─────────────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: shelf-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database — points to the postgres service above
+      DB_URL: jdbc:postgresql://postgres:5432/shelf_db
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      # Auth
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:3000/oauth/callback}
+      # CORS — frontend container is served on port 3000
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8080:8080"
+
+  # ── React Frontend (Nginx) ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # VITE_API_URL is empty here: Nginx proxies /api → backend internally
+        VITE_API_URL: ""
+        VITE_TMDB_API_KEY: ${VITE_TMDB_API_KEY}
+        VITE_RAWG_API_KEY: ${VITE_RAWG_API_KEY}
+    container_name: shelf-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
