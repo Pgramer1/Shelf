@@ -1,13 +1,16 @@
 # Frontend build artifacts
+
 node_modules/
 dist/
 .next/
 
 # Environment files
+
 .env
-.env.*
+.env.\*
 !.env.example
 
 # Editor
+
 .vscode/
 .idea/
