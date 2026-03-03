@@ -3,8 +3,8 @@ spring:
     name: shelf-backend
 
   datasource:
-    # Accepts Railway's DB_URL or Spring Boot's native SPRING_DATASOURCE_URL
-    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://localhost:5433/shelf_db}}
+    # Priority: explicit full URL → Render individual parts → local default
+    url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:shelf_db}}}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:postgres}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:admin}}
     driver-class-name: org.postgresql.Driver

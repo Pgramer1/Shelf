@@ -1,0 +1,73 @@
+databases:
+  - name: shelf-db
+    databaseName: shelf_db
+    user: shelf_user
+    plan: free
+
+services:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: shelf-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/actuator/health
+    envVars:
+      # Database — wired automatically from the Render PostgreSQL instance above
+      - key: DB_HOST
+        fromDatabase:
+          name: shelf-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: shelf-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: shelf-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: shelf-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: shelf-db
+          property: password
+
+      # JWT — auto-generate a secure random value
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Google OAuth2 — set these manually in the Render dashboard
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: OAUTH2_REDIRECT_URI
+        sync: false
+
+      # CORS — set to your frontend URL after it deploys (e.g. https://shelf-frontend.onrender.com)
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: shelf-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Set to your backend URL after it deploys (e.g. https://shelf-backend.onrender.com/api)
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_TMDB_API_KEY
+        sync: false
+      - key: VITE_RAWG_API_KEY
+        sync: false
