@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -44,6 +45,9 @@ public class SecurityConfig {
 
     // OAuth2 beans are optional — only present when Google credentials are configured
     @Autowired(required = false)
+    private ClientRegistrationRepository clientRegistrationRepository;
+
+    @Autowired(required = false)
     private OAuth2UserService oAuth2UserService;
 
     @Autowired(required = false)
@@ -72,6 +76,7 @@ public class SecurityConfig {
 
         // Only enable OAuth2 login when Google credentials are actually configured
         if (googleClientId != null && !googleClientId.isBlank()
+                && clientRegistrationRepository != null
                 && oAuth2UserService != null
                 && oAuth2AuthenticationSuccessHandler != null
                 && cookieAuthorizationRequestRepository != null) {

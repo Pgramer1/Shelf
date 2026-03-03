@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
-import { UserMedia, Status, MediaType } from '../types';
+import { UserMedia, MediaType } from '../types';
 import { LogOut, Plus, Star } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
