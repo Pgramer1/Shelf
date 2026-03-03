@@ -49,7 +49,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
     @SuppressWarnings("deprecation")
     private String serialize(Object object) {
-        return Base64.getUrlEncoder().encodeToString(
+        // withoutPadding() avoids '=' chars in the cookie value which can corrupt parsing
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(
                 org.springframework.util.SerializationUtils.serialize(object));
     }
 

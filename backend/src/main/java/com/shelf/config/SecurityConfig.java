@@ -2,6 +2,7 @@ package com.shelf.config;
 
 import com.shelf.security.JwtAuthenticationFilter;
 import com.shelf.security.HttpCookieOAuth2AuthorizationRequestRepository;
+import com.shelf.security.OAuth2AuthenticationFailureHandler;
 import com.shelf.security.OAuth2AuthenticationSuccessHandler;
 import com.shelf.service.OAuth2UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,9 @@ public class SecurityConfig {
     private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Autowired(required = false)
+    private OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+
+    @Autowired(required = false)
     private HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService) {
@@ -85,7 +89,8 @@ public class SecurityConfig {
                             .authorizationRequestRepository(cookieAuthorizationRequestRepository))
                     .userInfoEndpoint(userInfo -> userInfo
                             .userService(oAuth2UserService))
-                    .successHandler(oAuth2AuthenticationSuccessHandler));
+                    .successHandler(oAuth2AuthenticationSuccessHandler)
+                    .failureHandler(oAuth2AuthenticationFailureHandler));
         }
 
         return http.build();
