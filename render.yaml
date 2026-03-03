@@ -2,7 +2,6 @@ databases:
   - name: shelf-db
     databaseName: shelf_db
     user: shelf_user
-    plan: free
 
 services:
   # ── Backend ─────────────────────────────────────────────────────────────────
@@ -11,7 +10,6 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: free
     healthCheckPath: /api/actuator/health
     envVars:
       # Database — wired automatically from the Render PostgreSQL instance above
