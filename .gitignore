@@ -1,10 +1,8 @@
 # ===========================================
 # SENSITIVE FILES - DO NOT COMMIT
 # ===========================================
-# Application configuration with credentials
-backend/src/main/resources/application.yml
-backend/src/main/resources/application-h2.yml
-backend/src/main/resources/application-*.yml
+# Application configuration with credentials (use application-local.yml for local secrets)
+backend/src/main/resources/application-local.yml
 
 # Machine-specific run scripts
 backend/run.cmd
