@@ -3,11 +3,14 @@ spring:
     name: shelf-backend
 
   datasource:
-    # Priority: explicit full URL → Render individual parts → local default
+    # Priority: explicit full URL → individual parts → local default
     url: ${SPRING_DATASOURCE_URL:${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:shelf_db}}}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:postgres}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:admin}}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        sslmode: ${DB_SSLMODE:disable}
 
   jpa:
     hibernate:
