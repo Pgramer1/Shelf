@@ -31,11 +31,12 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
             deleteCookie(request, response, COOKIE_NAME);
             return;
         }
-        Cookie cookie = new Cookie(COOKIE_NAME, serialize(authorizationRequest));
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(COOKIE_MAX_AGE);
-        response.addCookie(cookie);
+        // SameSite=None;Secure is required for cross-site OAuth2 redirects when
+        // the frontend and backend are on different domains (e.g. different subdomains on Render)
+        String cookieValue = serialize(authorizationRequest);
+        String cookieHeader = COOKIE_NAME + "=" + cookieValue
+                + "; Path=/; HttpOnly; Secure; Max-Age=" + COOKIE_MAX_AGE + "; SameSite=None";
+        response.addHeader("Set-Cookie", cookieHeader);
     }
 
     @Override
