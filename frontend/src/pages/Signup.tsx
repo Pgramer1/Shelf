@@ -141,7 +141,7 @@ const Signup: React.FC = () => {
           </div>
 
           <a
-            href="http://localhost:8080/api/oauth2/authorization/google"
+            href={`${import.meta.env.VITE_API_URL || '/api'}/oauth2/authorization/google`}
             className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200 text-gray-700 dark:text-gray-300 font-medium"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
