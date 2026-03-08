@@ -20,9 +20,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        // OAuth-only users have no password hash; Spring Security's User constructor
+        // rejects null passwords, so fall back to "" (which never matches any BCrypt hash).
+        String password = user.getPasswordHash() != null ? user.getPasswordHash() : "";
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
-                user.getPasswordHash(),
+                password,
                 new ArrayList<>());
     }
 }
