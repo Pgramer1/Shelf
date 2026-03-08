@@ -1,5 +1,7 @@
 package com.shelf.security;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -7,42 +9,30 @@ import org.springframework.security.oauth2.client.web.AuthorizationRequestReposi
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 
 /**
- * Stores the OAuth2 authorization request in an in-memory map (keyed by state)
- * and puts only the small state string into a cookie.
+ * Stores the OAuth2AuthorizationRequest fully in the browser cookie as compact JSON
+ * (Base64URL-encoded). This is completely stateless — no in-memory map — so it
+ * survives backend restarts and works on multi-instance deployments.
  *
- * The previous approach (Java-serializing the full request into the cookie value)
- * produced blobs well over the 4 KB browser cookie limit, which caused browsers to
- * silently drop the cookie → "authorization_request_not_found" on the callback.
+ * JSON is used instead of Java serialization because Java-serialized objects easily
+ * exceed the 4 KB browser cookie limit, causing the cookie to be silently dropped
+ * and resulting in "authorization_request_not_found" on the callback.
  */
 @Component
 public class HttpCookieOAuth2AuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
-    private static final String COOKIE_NAME = "oauth2_auth_state";
+    private static final String COOKIE_NAME = "oauth2_auth_req";
     private static final int COOKIE_MAX_AGE = 180; // seconds
 
-    private record Entry(OAuth2AuthorizationRequest request, Instant expiresAt) {}
-
-    // Thread-safe in-memory store: state → request + expiry
-    private final Map<String, Entry> store = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-        return getCookieValue(request, COOKIE_NAME)
-                .map(state -> {
-                    Entry entry = store.get(state);
-                    if (entry == null || Instant.now().isAfter(entry.expiresAt())) {
-                        store.remove(state);
-                        return null;
-                    }
-                    return entry.request();
-                })
+        return getCookieValue(request)
+                .map(this::deserialize)
                 .orElse(null);
     }
 
@@ -50,48 +40,88 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest,
             HttpServletRequest request, HttpServletResponse response) {
         if (authorizationRequest == null) {
-            getCookieValue(request, COOKIE_NAME).ifPresent(store::remove);
-            deleteCookie(request, response, COOKIE_NAME);
+            deleteCookie(response);
             return;
         }
-
-        String state = authorizationRequest.getState();
-        store.put(state, new Entry(authorizationRequest, Instant.now().plusSeconds(COOKIE_MAX_AGE)));
-
-        // Only the tiny state string goes in the cookie — stays well under 4 KB.
-        // SameSite=None;Secure is required for cross-origin redirects (frontend and
-        // backend on different Render subdomains).
-        String cookieHeader = COOKIE_NAME + "=" + state
-                + "; Path=/; HttpOnly; Secure; Max-Age=" + COOKIE_MAX_AGE + "; SameSite=None";
-        response.addHeader("Set-Cookie", cookieHeader);
+        String cookieValue = serialize(authorizationRequest);
+        // SameSite=None;Secure is required for cross-origin redirects when the
+        // frontend and backend are on different subdomains (e.g. Render deployment).
+        response.addHeader("Set-Cookie",
+                COOKIE_NAME + "=" + cookieValue
+                        + "; Path=/; HttpOnly; Secure; Max-Age=" + COOKIE_MAX_AGE + "; SameSite=None");
     }
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
             HttpServletResponse response) {
         OAuth2AuthorizationRequest authRequest = loadAuthorizationRequest(request);
-        if (authRequest != null) {
-            store.remove(authRequest.getState());
-        }
-        deleteCookie(request, response, COOKIE_NAME);
+        deleteCookie(response);
         return authRequest;
     }
 
-    private Optional<String> getCookieValue(HttpServletRequest request, String name) {
+    // ── serialization ──────────────────────────────────────────────────────
+
+    private String serialize(OAuth2AuthorizationRequest req) {
+        try {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("au",  req.getAuthorizationUri());
+            data.put("ci",  req.getClientId());
+            data.put("ru",  req.getRedirectUri());
+            data.put("st",  req.getState());
+            data.put("sc",  new ArrayList<>(req.getScopes()));
+            data.put("ap",  req.getAdditionalParameters());
+            // Only keep string-valued attributes to stay JSON-safe
+            Map<String, String> attrs = new LinkedHashMap<>();
+            req.getAttributes().forEach((k, v) -> { if (v instanceof String s) attrs.put(k, s); });
+            data.put("at", attrs);
+            return Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(objectMapper.writeValueAsBytes(data));
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to serialize OAuth2AuthorizationRequest", e);
+        }
+    }
+
+    private OAuth2AuthorizationRequest deserialize(String encoded) {
+        try {
+            byte[] json = Base64.getUrlDecoder().decode(encoded);
+            Map<String, Object> data = objectMapper.readValue(json, new TypeReference<>() {});
+
+            @SuppressWarnings("unchecked")
+            List<String> scopes = (List<String>) data.getOrDefault("sc", Collections.emptyList());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> ap = (Map<String, Object>) data.getOrDefault("ap", Collections.emptyMap());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> at = (Map<String, Object>) data.getOrDefault("at", Collections.emptyMap());
+
+            return OAuth2AuthorizationRequest.authorizationCode()
+                    .authorizationUri((String) data.get("au"))
+                    .clientId((String)          data.get("ci"))
+                    .redirectUri((String)        data.get("ru"))
+                    .state((String)              data.get("st"))
+                    .scopes(new LinkedHashSet<>(scopes))
+                    .additionalParameters(ap)
+                    .attributes(at)
+                    .build();
+        } catch (Exception e) {
+            return null; // treat corrupted / expired cookie as absent
+        }
+    }
+
+    // ── cookie helpers ─────────────────────────────────────────────────────
+
+    private Optional<String> getCookieValue(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return Optional.empty();
         for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) {
+            if (COOKIE_NAME.equals(cookie.getName())) {
                 return Optional.of(cookie.getValue());
             }
         }
         return Optional.empty();
     }
 
-    private void deleteCookie(HttpServletRequest request, HttpServletResponse response, String name) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+    private void deleteCookie(HttpServletResponse response) {
+        response.addHeader("Set-Cookie",
+                COOKIE_NAME + "=; Path=/; HttpOnly; Secure; Max-Age=0; SameSite=None");
     }
 }
