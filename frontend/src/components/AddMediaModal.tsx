@@ -1,9 +1,9 @@
 ﻿import React, { useState, useRef } from 'react';
 import { mediaService } from '../services/mediaService';
 import { shelfService } from '../services/shelfService';
-import { searchMedia, SearchResult } from '../services/searchService';
+import { searchMedia, getTVSeasons, SearchResult, TVSeason } from '../services/searchService';
 import { MediaType, Status } from '../types';
-import { X, Search, Loader2, PenLine } from 'lucide-react';
+import { X, Search, Loader2, PenLine, ChevronLeft } from 'lucide-react';
 
 interface AddMediaModalProps {
   onClose: () => void;
@@ -39,6 +39,11 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // TV season picker state
+  const [pendingTVShow, setPendingTVShow] = useState<SearchResult | null>(null);
+  const [tvSeasons, setTvSeasons] = useState<TVSeason[]>([]);
+  const [loadingSeasons, setLoadingSeasons] = useState(false);
 
   const todayStr = () => new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState<string>(todayStr());
@@ -80,14 +85,36 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
   };
 
   const selectResult = (result: SearchResult) => {
-    setTitle(result.title);
-    setType(result.type);
-    setTotalUnits(result.totalUnits);
-    setImageUrl(result.imageUrl || '');
-    setDescription(result.description || '');
-    setReleaseYear(result.releaseYear);
-    setStatus(getDefaultStatus(result.type));
+    if (result.type === MediaType.TV_SERIES) {
+      setPendingTVShow(result);
+      setLoadingSeasons(true);
+      setTvSeasons([]);
+      getTVSeasons(result.externalId).then((seasons) => {
+        setTvSeasons(seasons);
+        setLoadingSeasons(false);
+      }).catch(() => setLoadingSeasons(false));
+      return;
+    }
+    applyResult(result.title, result.type, result.totalUnits, result.imageUrl, result.description, result.releaseYear);
+  };
+
+  const applyResult = (
+    t: string, tp: MediaType, units: number,
+    img?: string, desc?: string, year?: number,
+  ) => {
+    setTitle(t); setType(tp); setTotalUnits(units);
+    setImageUrl(img || ''); setDescription(desc || ''); setReleaseYear(year);
+    setStatus(getDefaultStatus(tp));
     setStep(2);
+  };
+
+  const selectSeason = (show: SearchResult, season: TVSeason) => {
+    const seasonTitle = `${show.title} — Season ${season.seasonNumber}`;
+    applyResult(
+      seasonTitle, MediaType.TV_SERIES, season.episodeCount,
+      season.posterUrl || show.imageUrl, show.description, season.airYear || show.releaseYear,
+    );
+    setPendingTVShow(null);
   };
 
   const enterManually = () => {
@@ -182,7 +209,7 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
         <div className="p-6">
 
           {/* Step 0: Search */}
-          {step === 0 && (
+          {step === 0 && !pendingTVShow && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 {Object.values(MediaType).map((t) => (
@@ -253,6 +280,73 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
                 <PenLine className="w-4 h-4" />
                 Enter manually
               </button>
+            </div>
+          )}
+
+          {/* Step 0: TV Season Picker */}
+          {step === 0 && pendingTVShow && (
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setPendingTVShow(null)}
+                className="flex items-center gap-1 text-sm text-blue-500 hover:underline"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to results
+              </button>
+
+              <div className="flex gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                {pendingTVShow.imageUrl && (
+                  <img src={pendingTVShow.imageUrl} alt={pendingTVShow.title} className="w-10 h-14 object-cover rounded flex-shrink-0" />
+                )}
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white">{pendingTVShow.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {pendingTVShow.releaseYear} · Select a season to add
+                  </p>
+                </div>
+              </div>
+
+              {loadingSeasons ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Loading seasons…</span>
+                </div>
+              ) : tvSeasons.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No season data available.</p>
+                  <button
+                    type="button"
+                    onClick={() => applyResult(pendingTVShow.title, MediaType.TV_SERIES, pendingTVShow.totalUnits, pendingTVShow.imageUrl, pendingTVShow.description, pendingTVShow.releaseYear)}
+                    className="text-sm text-blue-500 hover:underline"
+                  >
+                    Add entire series instead
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {tvSeasons.map((season) => (
+                    <button
+                      key={season.seasonNumber}
+                      type="button"
+                      onClick={() => selectSeason(pendingTVShow, season)}
+                      className="w-full flex gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition text-left"
+                    >
+                      {season.posterUrl ? (
+                        <img src={season.posterUrl} alt={season.name} className="w-10 h-14 object-cover rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-14 bg-gray-200 dark:bg-gray-700 rounded flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex flex-col justify-center">
+                        <p className="font-medium text-gray-900 dark:text-white">{season.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {season.airYear && `${season.airYear} · `}{season.episodeCount} episodes
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

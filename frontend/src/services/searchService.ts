@@ -11,6 +11,14 @@ export interface SearchResult {
   releaseYear?: number;
 }
 
+export interface TVSeason {
+  seasonNumber: number;
+  episodeCount: number;
+  name: string;
+  airYear?: number;
+  posterUrl?: string;
+}
+
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '';
 const RAWG_API_KEY = import.meta.env.VITE_RAWG_API_KEY || '';
 
@@ -113,4 +121,20 @@ const searchGames = async (query: string): Promise<SearchResult[]> => {
     description: item.genres?.map((g: any) => g.name).join(', '),
     releaseYear: item.released ? parseInt(item.released.split('-')[0]) : undefined,
   }));
+};
+
+export const getTVSeasons = async (tmdbId: string): Promise<TVSeason[]> => {
+  if (!TMDB_API_KEY) return [];
+  const res = await axios.get(`https://api.themoviedb.org/3/tv/${tmdbId}`, {
+    params: { api_key: TMDB_API_KEY },
+  });
+  return (res.data.seasons as any[])
+    .filter((s) => s.season_number > 0 && s.episode_count > 0)
+    .map((s) => ({
+      seasonNumber: s.season_number,
+      episodeCount: s.episode_count,
+      name: s.name,
+      airYear: s.air_date ? parseInt(s.air_date.split('-')[0]) : undefined,
+      posterUrl: s.poster_path ? `https://image.tmdb.org/t/p/w300${s.poster_path}` : undefined,
+    }));
 };

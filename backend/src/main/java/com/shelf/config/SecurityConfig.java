@@ -37,10 +37,6 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
     private String allowedOrigins;
 
-    // Read Google client ID directly from env var to detect whether OAuth2 is configured
-    @Value("${GOOGLE_CLIENT_ID:}")
-    private String googleClientId;
-
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
@@ -79,8 +75,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Only enable OAuth2 login when Google credentials are actually configured
-        if (googleClientId != null && !googleClientId.isBlank()
-                && clientRegistrationRepository != null
+        if (clientRegistrationRepository != null
                 && oAuth2UserService != null
                 && oAuth2AuthenticationSuccessHandler != null
                 && cookieAuthorizationRequestRepository != null) {

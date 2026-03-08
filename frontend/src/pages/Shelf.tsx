@@ -5,6 +5,7 @@ import { UserMedia, MediaType } from '../types';
 import { LogOut, Plus, Star } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
+import ActivityHeatmap from '../components/ActivityHeatmap';
 
 const typeLabels: Record<string, string> = {
   ALL: 'All',
@@ -159,6 +160,13 @@ const Shelf: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Activity Heatmap */}
+      {!loading && allData.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <ActivityHeatmap allData={allData} />
+        </div>
+      )}
 
       {/* Count bar */}
       {!loading && (
