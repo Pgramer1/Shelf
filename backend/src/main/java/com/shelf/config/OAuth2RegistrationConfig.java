@@ -14,10 +14,8 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 //   - Environment variables  : GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
 //   - application.yml properties: spring.security.oauth2.client.registration.google.client-id / .client-secret
 @Configuration
-@ConditionalOnExpression(
-    "!'${GOOGLE_CLIENT_ID:}'.isEmpty() or " +
-    "!'${spring.security.oauth2.client.registration.google.client-id:}'.isEmpty()"
-)
+@ConditionalOnExpression("!'${GOOGLE_CLIENT_ID:}'.isEmpty() or " +
+        "!'${spring.security.oauth2.client.registration.google.client-id:}'.isEmpty()")
 public class OAuth2RegistrationConfig {
 
     @Value("${GOOGLE_CLIENT_ID:}")
@@ -41,12 +39,12 @@ public class OAuth2RegistrationConfig {
                 .withRegistrationId("google")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
                 .scope("profile", "email")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
-            .tokenUri("https://oauth2.googleapis.com/token")
+                .tokenUri("https://oauth2.googleapis.com/token")
                 .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
                 .userNameAttributeName("sub")
                 .clientName("Google")
