@@ -24,6 +24,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
     private String redirectUri;
 
+    private String normalizeRedirectUri(String uri) {
+        if (uri != null && uri.endsWith("/oauth/callback")) {
+            return uri + "/";
+        }
+        return uri;
+    }
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
@@ -34,7 +41,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);
 
-        String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
+        String targetUrl = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectUri))
                 .queryParam("token", token)
                 .queryParam("username", user.getUsername())
                 .queryParam("email", user.getEmail())

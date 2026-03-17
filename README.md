@@ -54,12 +54,15 @@ CREATE DATABASE shelf_db;
 ```bash
 cd backend
 
+# Configure local env (OAuth, DB overrides, etc.)
+copy .env.local.example .env.local
+
 # Update application.yml with your PostgreSQL credentials
 # Default: username=postgres, password=postgres
 
 # Build and run
 mvn clean install
-mvn spring-boot:run
+run.cmd
 ```
 
 Backend will run on `http://localhost:8080`

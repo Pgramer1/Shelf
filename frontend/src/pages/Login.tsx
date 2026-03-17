@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { LogIn } from 'lucide-react';
@@ -9,8 +9,33 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  React.useEffect(() => {
+    const oauthError = searchParams.get('oauth_error');
+    if (oauthError) {
+      setError(oauthError);
+    }
+  }, [searchParams]);
+
+  const extractErrorMessage = (err: any): string => {
+    const data = err?.response?.data;
+    if (typeof data === 'string' && data.trim()) {
+      return data;
+    }
+    if (data?.message && typeof data.message === 'string') {
+      return data.message;
+    }
+    if (err?.response?.status === 401) {
+      return 'Invalid username or password';
+    }
+    if (err?.response?.status === 403) {
+      return 'Access denied. Please check your credentials and try again.';
+    }
+    return 'Login failed. Please try again.';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +47,7 @@ const Login: React.FC = () => {
       login(response.token, { username: response.username, email: response.email });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -96,7 +121,7 @@ const Login: React.FC = () => {
           </div>
 
           <a
-            href={`${import.meta.env.VITE_API_URL || '/api'}/oauth2/authorization/google`}
+            href={`${import.meta.env.VITE_API_URL || '/api'}/auth/oauth2/google`}
             className="mt-4 w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200 text-gray-700 dark:text-gray-300 font-medium"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

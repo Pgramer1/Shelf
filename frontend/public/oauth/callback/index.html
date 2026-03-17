@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OAuth Redirect</title>
+    <script>
+      (function () {
+        var base = window.location.origin + '/';
+        var query = window.location.search || '';
+        // Move the OAuth response to root so the React app can always process it.
+        window.location.replace(base + query);
+      })();
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>

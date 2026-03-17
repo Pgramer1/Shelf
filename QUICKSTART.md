@@ -34,7 +34,9 @@ spring:
 
 ```bash
 cd backend
-mvn spring-boot:run
+copy .env.local.example .env.local
+# fill GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in .env.local for Google login
+run.cmd
 ```
 
 Wait for: "Started ShelfApplication in X seconds"
@@ -77,6 +79,12 @@ Create an account and start adding media!
 - Check backend is running (http://localhost:8080/api)
 - Check browser console for errors
 - Clear browser cache and localStorage
+
+**Google OAuth shows 404 or disabled message:**
+
+- Verify `backend/.env.local` has `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+- Restart backend using `backend/run.cmd` after editing env values
+- Confirm Google Console redirect URI: `http://localhost:8080/api/login/oauth2/code/google`
 
 **Database connection error:**
 

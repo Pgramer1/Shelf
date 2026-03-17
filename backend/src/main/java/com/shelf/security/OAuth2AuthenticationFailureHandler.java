@@ -16,12 +16,25 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
     private String redirectUri;
 
+    private String frontendRoot() {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            return "http://localhost:3000";
+        }
+        if (redirectUri.endsWith("/oauth/callback")) {
+            return redirectUri.substring(0, redirectUri.length() - "/oauth/callback".length());
+        }
+        if (redirectUri.endsWith("/oauth/callback/")) {
+            return redirectUri.substring(0, redirectUri.length() - "/oauth/callback/".length());
+        }
+        return redirectUri;
+    }
+
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException exception) throws IOException {
         String targetUrl = UriComponentsBuilder
-                .fromUriString(redirectUri.replace("/oauth/callback", "/login"))
-                .queryParam("error", exception.getMessage())
+                .fromUriString(frontendRoot())
+                .queryParam("oauth_error", exception.getMessage())
                 .build().toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

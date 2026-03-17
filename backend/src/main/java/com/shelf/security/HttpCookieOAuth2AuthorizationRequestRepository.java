@@ -7,12 +7,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 /**
- * Stores the OAuth2AuthorizationRequest fully in the browser cookie as compact JSON
+ * Stores only the minimal OAuth2AuthorizationRequest data in the browser cookie as compact JSON
  * (Base64URL-encoded). This is completely stateless — no in-memory map — so it
  * survives backend restarts and works on multi-instance deployments.
  *
@@ -69,11 +70,10 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
             data.put("ru",  req.getRedirectUri());
             data.put("st",  req.getState());
             data.put("sc",  new ArrayList<>(req.getScopes()));
-            data.put("ap",  req.getAdditionalParameters());
-            // Only keep string-valued attributes to stay JSON-safe
-            Map<String, String> attrs = new LinkedHashMap<>();
-            req.getAttributes().forEach((k, v) -> { if (v instanceof String s) attrs.put(k, s); });
-            data.put("at", attrs);
+            Object registrationId = req.getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
+            if (registrationId instanceof String regId && !regId.isBlank()) {
+                data.put("rg", regId);
+            }
             return Base64.getUrlEncoder().withoutPadding()
                     .encodeToString(objectMapper.writeValueAsBytes(data));
         } catch (Exception e) {
@@ -88,10 +88,12 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
             @SuppressWarnings("unchecked")
             List<String> scopes = (List<String>) data.getOrDefault("sc", Collections.emptyList());
-            @SuppressWarnings("unchecked")
-            Map<String, Object> ap = (Map<String, Object>) data.getOrDefault("ap", Collections.emptyMap());
-            @SuppressWarnings("unchecked")
-            Map<String, Object> at = (Map<String, Object>) data.getOrDefault("at", Collections.emptyMap());
+            String registrationId = (String) data.get("rg");
+
+            Map<String, Object> attrs = new LinkedHashMap<>();
+            if (registrationId != null && !registrationId.isBlank()) {
+                attrs.put(OAuth2ParameterNames.REGISTRATION_ID, registrationId);
+            }
 
             return OAuth2AuthorizationRequest.authorizationCode()
                     .authorizationUri((String) data.get("au"))
@@ -99,8 +101,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                     .redirectUri((String)        data.get("ru"))
                     .state((String)              data.get("st"))
                     .scopes(new LinkedHashSet<>(scopes))
-                    .additionalParameters(ap)
-                    .attributes(at)
+                    .attributes(attrs)
                     .build();
         } catch (Exception e) {
             return null; // treat corrupted / expired cookie as absent

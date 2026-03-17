@@ -4,15 +4,15 @@ spring:
 
   # ── Google OAuth2 (optional) ───────────────────────────────────────────────
   # Supply credentials via ONE of the methods below, then restart the app.
-  #
+
   # Option A – environment variables (recommended for production / Docker):
   #   GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
   #   GOOGLE_CLIENT_SECRET=your_client_secret
-  #
+
   # Option B – application.yml properties (convenient for local development):
   #   Uncomment the block below and fill in your values from
   #   https://console.cloud.google.com/ → APIs & Services → Credentials
-  #
+  
   # security:
   #   oauth2:
   #     client:
@@ -49,6 +49,8 @@ server:
   port: ${PORT:8080}
   servlet:
     context-path: /api
+  tomcat:
+    max-http-request-header-size: 32KB
   forward-headers-strategy: native
 
 app:

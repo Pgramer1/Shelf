@@ -27,12 +27,12 @@ public class AuthService {
     public AuthResponse signup(SignupRequest request) {
         // Check if username exists
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new IllegalStateException("Username already exists");
         }
 
         // Check if email exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new IllegalStateException("Email already exists");
         }
 
         // Create new user
@@ -57,7 +57,7 @@ public class AuthService {
                         request.getPassword()));
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new IllegalStateException("User not found"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);

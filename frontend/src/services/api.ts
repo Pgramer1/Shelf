@@ -7,10 +7,18 @@ const api = axios.create({
   },
 });
 
+const isAuthEndpoint = (url?: string): boolean => {
+  if (!url) return false;
+  return url.includes('/auth/login')
+    || url.includes('/auth/signup')
+    || url.includes('/auth/oauth2/google')
+    || url.includes('/oauth2/authorization/');
+};
+
 // Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && !isAuthEndpoint(config.url)) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -20,7 +28,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url;
+    if (error.response?.status === 401 && !isAuthEndpoint(requestUrl)) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
