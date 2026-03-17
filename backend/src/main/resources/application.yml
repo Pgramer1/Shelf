@@ -12,7 +12,7 @@ spring:
   # Option B – application.yml properties (convenient for local development):
   #   Uncomment the block below and fill in your values from
   #   https://console.cloud.google.com/ → APIs & Services → Credentials
-  
+
   # security:
   #   oauth2:
   #     client:

@@ -34,7 +34,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
-        // CustomOAuth2User carries the persisted User entity — no extra DB query needed.
+        // CustomOAuth2User carries the persisted User entity — no extra DB query
+        // needed.
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         User user = oAuth2User.getUser();
 

@@ -57,7 +57,7 @@ public class AuthService {
                         request.getPassword()));
 
         User user = userRepository.findByUsername(request.getUsername())
-            .orElseThrow(() -> new IllegalStateException("User not found"));
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);

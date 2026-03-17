@@ -13,12 +13,15 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- * Stores only the minimal OAuth2AuthorizationRequest data in the browser cookie as compact JSON
+ * Stores only the minimal OAuth2AuthorizationRequest data in the browser cookie
+ * as compact JSON
  * (Base64URL-encoded). This is completely stateless — no in-memory map — so it
  * survives backend restarts and works on multi-instance deployments.
  *
- * JSON is used instead of Java serialization because Java-serialized objects easily
- * exceed the 4 KB browser cookie limit, causing the cookie to be silently dropped
+ * JSON is used instead of Java serialization because Java-serialized objects
+ * easily
+ * exceed the 4 KB browser cookie limit, causing the cookie to be silently
+ * dropped
  * and resulting in "authorization_request_not_found" on the callback.
  */
 @Component
@@ -65,11 +68,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     private String serialize(OAuth2AuthorizationRequest req) {
         try {
             Map<String, Object> data = new LinkedHashMap<>();
-            data.put("au",  req.getAuthorizationUri());
-            data.put("ci",  req.getClientId());
-            data.put("ru",  req.getRedirectUri());
-            data.put("st",  req.getState());
-            data.put("sc",  new ArrayList<>(req.getScopes()));
+            data.put("au", req.getAuthorizationUri());
+            data.put("ci", req.getClientId());
+            data.put("ru", req.getRedirectUri());
+            data.put("st", req.getState());
+            data.put("sc", new ArrayList<>(req.getScopes()));
             Object registrationId = req.getAttribute(OAuth2ParameterNames.REGISTRATION_ID);
             if (registrationId instanceof String regId && !regId.isBlank()) {
                 data.put("rg", regId);
@@ -84,7 +87,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     private OAuth2AuthorizationRequest deserialize(String encoded) {
         try {
             byte[] json = Base64.getUrlDecoder().decode(encoded);
-            Map<String, Object> data = objectMapper.readValue(json, new TypeReference<>() {});
+            Map<String, Object> data = objectMapper.readValue(json, new TypeReference<>() {
+            });
 
             @SuppressWarnings("unchecked")
             List<String> scopes = (List<String>) data.getOrDefault("sc", Collections.emptyList());
@@ -97,9 +101,9 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
             return OAuth2AuthorizationRequest.authorizationCode()
                     .authorizationUri((String) data.get("au"))
-                    .clientId((String)          data.get("ci"))
-                    .redirectUri((String)        data.get("ru"))
-                    .state((String)              data.get("st"))
+                    .clientId((String) data.get("ci"))
+                    .redirectUri((String) data.get("ru"))
+                    .state((String) data.get("st"))
                     .scopes(new LinkedHashSet<>(scopes))
                     .attributes(attrs)
                     .build();
@@ -112,7 +116,8 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
     private Optional<String> getCookieValue(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-        if (cookies == null) return Optional.empty();
+        if (cookies == null)
+            return Optional.empty();
         for (Cookie cookie : cookies) {
             if (COOKIE_NAME.equals(cookie.getName())) {
                 return Optional.of(cookie.getValue());
