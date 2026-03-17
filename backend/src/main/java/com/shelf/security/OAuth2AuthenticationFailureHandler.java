@@ -32,9 +32,13 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException exception) throws IOException {
+        String message = exception.getMessage();
+        if (message != null && message.contains("invalid_token_response")) {
+            message = "Google OAuth is misconfigured on the server. Verify GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and Google authorized redirect URI.";
+        }
         String targetUrl = UriComponentsBuilder
                 .fromUriString(frontendRoot())
-                .queryParam("oauth_error", exception.getMessage())
+                .queryParam("oauth_error", message)
                 .build().toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

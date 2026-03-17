@@ -34,19 +34,19 @@ public class OAuth2RegistrationConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
-        String clientId     = googleClientIdEnv.isBlank()     ? googleClientIdProp     : googleClientIdEnv;
-        String clientSecret = googleClientSecretEnv.isBlank() ? googleClientSecretProp : googleClientSecretEnv;
+        String clientId = (googleClientIdEnv.isBlank() ? googleClientIdProp : googleClientIdEnv).trim();
+        String clientSecret = (googleClientSecretEnv.isBlank() ? googleClientSecretProp : googleClientSecretEnv).trim();
 
         ClientRegistration googleRegistration = ClientRegistration
                 .withRegistrationId("google")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
                 .scope("profile", "email")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
-                .tokenUri("https://www.googleapis.com/oauth2/v4/token")
+            .tokenUri("https://oauth2.googleapis.com/token")
                 .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
                 .userNameAttributeName("sub")
                 .clientName("Google")
