@@ -1,5 +1,5 @@
 import api from './api';
-import { LoginRequest, SignupRequest, AuthResponse } from '../types';
+import { LoginRequest, SignupRequest, AuthResponse, ForgotPasswordRequest } from '../types';
 
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
@@ -9,6 +9,11 @@ export const authService = {
 
   async signup(data: SignupRequest): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/signup', data);
+    return response.data;
+  },
+
+  async forgotPassword(data: ForgotPasswordRequest): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/forgot-password', data);
     return response.data;
   },
 

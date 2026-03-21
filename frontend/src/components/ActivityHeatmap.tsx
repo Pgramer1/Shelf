@@ -23,11 +23,11 @@ function toLocalDateStr(isoStr: string): string {
 }
 
 function cellColor(count: number): string {
-  if (count === 0) return 'bg-gray-100 dark:bg-gray-700/50';
-  if (count === 1) return 'bg-green-200 dark:bg-green-900';
-  if (count <= 3) return 'bg-green-400 dark:bg-green-700';
-  if (count <= 6) return 'bg-green-600 dark:bg-green-500';
-  return 'bg-green-800 dark:bg-green-400';
+  if (count === 0) return 'bg-slate-100 dark:bg-slate-700/50';
+  if (count === 1) return 'bg-blue-200 dark:bg-blue-900';
+  if (count <= 3) return 'bg-blue-400 dark:bg-blue-700';
+  if (count <= 6) return 'bg-blue-600 dark:bg-blue-500';
+  return 'bg-blue-800 dark:bg-blue-400';
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ allData }) => {
@@ -128,9 +128,9 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ allData }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3">
+        <h3 className="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300">
           Watch Activity
         </h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -139,52 +139,56 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ allData }) => {
       </div>
 
       {/* Month labels */}
-      <div className="flex gap-[3px] mb-1 ml-8">
-        {weeks.map((_, ci) => {
-          const label = monthLabels.find((l) => l.col === ci);
-          return (
-            <div key={ci} className="w-[11px] flex-shrink-0 text-[9px] text-gray-400 dark:text-gray-500 leading-none">
-              {label ? label.label : ''}
-            </div>
-          );
-        })}
-      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="w-max min-w-full">
+          <div className="flex gap-[2px] mb-1 ml-7 font-mono">
+            {weeks.map((_, ci) => {
+              const label = monthLabels.find((l) => l.col === ci);
+              return (
+                <div key={ci} className="w-[10px] flex-shrink-0 text-[9px] text-slate-400 dark:text-slate-500 leading-none">
+                  {label ? label.label : ''}
+                </div>
+              );
+            })}
+          </div>
 
-      {/* Grid: days on left, week columns */}
-      <div className="flex gap-1">
-        {/* Day labels */}
-        <div className="flex flex-col gap-[3px] mr-1">
-          {DAYS.map((d, i) => (
-            <div key={d} className={`h-[11px] text-[9px] text-gray-400 dark:text-gray-500 leading-none flex items-center ${i % 2 === 1 ? '' : 'invisible'}`}>
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Week columns */}
-        <div className="flex gap-[3px] overflow-x-auto">
-          {weeks.map((col, ci) => (
-            <div key={ci} className="flex flex-col gap-[3px]">
-              {col.map((day) => (
-                <div
-                  key={day.date}
-                  className={`w-[11px] h-[11px] rounded-sm cursor-default transition-opacity hover:opacity-80 ${cellColor(day.count)}`}
-                  onMouseEnter={(e) => handleMouseEnter(e, day)}
-                  onMouseLeave={() => setTooltip(null)}
-                />
+          {/* Grid: days on left, week columns */}
+          <div className="flex gap-1">
+            {/* Day labels */}
+            <div className="flex flex-col gap-[2px] mr-1 font-mono">
+              {DAYS.map((d, i) => (
+                <div key={d} className={`h-[10px] text-[9px] text-slate-400 dark:text-slate-500 leading-none flex items-center ${i % 2 === 1 ? '' : 'invisible'}`}>
+                  {d}
+                </div>
               ))}
             </div>
-          ))}
+
+            {/* Week columns */}
+            <div className="flex gap-[2px]">
+              {weeks.map((col, ci) => (
+                <div key={ci} className="flex flex-col gap-[2px]">
+                  {col.map((day) => (
+                    <div
+                      key={day.date}
+                      className={`w-[10px] h-[10px] rounded-[2px] cursor-default transition-opacity hover:opacity-80 ${cellColor(day.count)}`}
+                      onMouseEnter={(e) => handleMouseEnter(e, day)}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Legend */}
       <div className="flex items-center gap-1.5 mt-3 justify-end">
-        <span className="text-[10px] text-gray-400 dark:text-gray-500">Less</span>
+        <span className="text-[10px] text-slate-400 dark:text-slate-500">Less</span>
         {[0, 1, 2, 4, 7].map((n) => (
-          <div key={n} className={`w-[11px] h-[11px] rounded-sm ${cellColor(n)}`} />
+          <div key={n} className={`w-[10px] h-[10px] rounded-[2px] ${cellColor(n)}`} />
         ))}
-        <span className="text-[10px] text-gray-400 dark:text-gray-500">More</span>
+        <span className="text-[10px] text-slate-400 dark:text-slate-500">More</span>
       </div>
 
       {/* Tooltip — rendered fixed via portal-style absolute positioning */}

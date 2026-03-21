@@ -7,6 +7,10 @@ import { LogIn } from 'lucide-react';
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -50,6 +54,20 @@ const Login: React.FC = () => {
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setForgotMessage('');
+    setForgotLoading(true);
+
+    try {
+      const res = await authService.forgotPassword({ email: forgotEmail });
+      setForgotMessage(res.message);
+    } catch {
+      setForgotMessage('If an account exists for this email, reset instructions have been sent.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -99,7 +117,41 @@ const Login: React.FC = () => {
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition"
               placeholder="Enter your password"
             />
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword((prev) => !prev)}
+                className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
+
+          {showForgotPassword && (
+            <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/20 p-3 space-y-2">
+              <p className="text-xs text-gray-600 dark:text-gray-300">Enter your email to receive reset instructions.</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 dark:text-white"
+                  placeholder="you@example.com"
+                />
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotLoading || !forgotEmail.trim()}
+                  className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-60"
+                >
+                  {forgotLoading ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+              {forgotMessage && <p className="text-xs text-green-700 dark:text-green-300">{forgotMessage}</p>}
+            </div>
+          )}
 
           <button
             type="submit"

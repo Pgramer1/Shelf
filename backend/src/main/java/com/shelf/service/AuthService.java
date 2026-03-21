@@ -1,6 +1,7 @@
 package com.shelf.service;
 
 import com.shelf.dto.AuthResponse;
+import com.shelf.dto.ForgotPasswordRequest;
 import com.shelf.dto.LoginRequest;
 import com.shelf.dto.SignupRequest;
 import com.shelf.model.User;
@@ -63,5 +64,11 @@ public class AuthService {
         String token = jwtTokenProvider.generateToken(userDetails);
 
         return new AuthResponse(token, user.getUsername(), user.getEmail());
+    }
+
+    public String forgotPassword(ForgotPasswordRequest request) {
+        // For now, keep this response generic to avoid leaking whether an email exists.
+        // Hook actual reset-token email delivery here when email infrastructure is added.
+        return "If an account exists for this email, reset instructions have been sent.(yet to be implemented)";
     }
 }

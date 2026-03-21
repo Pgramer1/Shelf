@@ -80,7 +80,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition group">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition group min-w-0">
         {/* Image */}
         <div className="relative aspect-[2/3] bg-gray-200 dark:bg-gray-700">
           {userMedia.media.imageUrl ? (
@@ -121,15 +121,15 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
         </div>
 
         {/* Content */}
-        <div className="p-3">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">
+        <div className="p-3 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 break-words">
             {userMedia.media.title}
           </h3>
           
           <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-2">
-            <span>{userMedia.media.type.replace('_', ' ')}</span>
+            <span className="truncate mr-2">{userMedia.media.type.replace('_', ' ')}</span>
             {userMedia.rating && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 whitespace-nowrap">
                 <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                 {userMedia.rating}/10
               </span>
@@ -138,9 +138,9 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
 
           {/* Progress Bar + Incrementor */}
           <div className="mb-2">
-            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <div className="flex justify-between items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Progress</span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 min-w-0">
                 <button
                   onClick={() => handleProgressChange(localProgress - 1)}
                   disabled={localProgress <= 0 || updating}
@@ -165,11 +165,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
                       if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                       if (e.key === 'Escape') { setEditingProgress(false); setEditValue(''); }
                     }}
-                    className="w-16 text-center tabular-nums bg-white dark:bg-gray-700 border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none"
+                    className="w-14 sm:w-16 text-center tabular-nums bg-white dark:bg-gray-700 border border-blue-400 rounded px-1 py-0.5 text-xs focus:outline-none"
                   />
                 ) : (
                   <span
-                    className="w-16 text-center tabular-nums cursor-pointer hover:text-blue-500 transition"
+                    className="w-14 sm:w-16 text-center tabular-nums cursor-pointer hover:text-blue-500 transition truncate"
                     title="Click to edit"
                     onClick={() => { setEditValue(String(localProgress)); setEditingProgress(true); }}
                   >

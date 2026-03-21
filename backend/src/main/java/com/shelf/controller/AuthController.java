@@ -1,6 +1,7 @@
 package com.shelf.controller;
 
 import com.shelf.dto.AuthResponse;
+import com.shelf.dto.ForgotPasswordRequest;
 import com.shelf.dto.LoginRequest;
 import com.shelf.dto.SignupRequest;
 import com.shelf.service.AuthService;
@@ -16,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -51,6 +53,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String message = authService.forgotPassword(request);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @GetMapping("/oauth2/google")

@@ -1,11 +1,12 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
 import { UserMedia, MediaType } from '../types';
-import { LogOut, Plus, Star } from 'lucide-react';
+import { ChevronDown, LogOut, Moon, Plus, SlidersHorizontal, Star, Sun } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
 import ActivityHeatmap from '../components/ActivityHeatmap';
+import ConsumptionByTypeChart from '../components/ConsumptionByTypeChart';
 
 const typeLabels: Record<string, string> = {
   ALL: 'All',
@@ -15,6 +16,23 @@ const typeLabels: Record<string, string> = {
   [MediaType.BOOK]: 'Books',
   [MediaType.GAME]: 'Games',
 };
+
+type SortOption =
+  | 'UPDATED_DESC'
+  | 'UPDATED_ASC'
+  | 'RATING_DESC'
+  | 'RATING_ASC'
+  | 'TITLE_ASC'
+  | 'PROGRESS_DESC';
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'UPDATED_DESC', label: 'Date: Recent first' },
+  { value: 'UPDATED_ASC', label: 'Date: Oldest first' },
+  { value: 'RATING_DESC', label: 'Rating: High to low' },
+  { value: 'RATING_ASC', label: 'Rating: Low to high' },
+  { value: 'TITLE_ASC', label: 'Title: A to Z' },
+  { value: 'PROGRESS_DESC', label: 'Progress: Most completed' },
+];
 
 const statusLabel = (s: string) =>
   s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -38,8 +56,23 @@ const Shelf: React.FC = () => {
   const [allData, setAllData]           = useState<UserMedia[]>([]);
   const [loading, setLoading]           = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('UPDATED_DESC');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => { loadShelfData(); }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldUseDark = stored ? stored === 'dark' : prefersDark;
+    setIsDarkMode(shouldUseDark);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   const loadShelfData = async () => {
     setLoading(true);
@@ -52,11 +85,27 @@ const Shelf: React.FC = () => {
     }
   };
 
-  const visibleData = allData.filter((item) => {
-    const typeMatch   = activeType   === 'ALL' || item.media.type === activeType;
-    const statusMatch = activeStatus === 'ALL' || item.status === activeStatus;
-    return typeMatch && statusMatch;
-  });
+  const visibleData = useMemo(() => {
+    const filtered = allData.filter((item) => {
+      const typeMatch = activeType === 'ALL' || item.media.type === activeType;
+      const statusMatch = activeStatus === 'ALL' || item.status === activeStatus;
+      return typeMatch && statusMatch;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'UPDATED_DESC') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      if (sortBy === 'UPDATED_ASC') return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      if (sortBy === 'RATING_DESC') return (b.rating ?? -1) - (a.rating ?? -1);
+      if (sortBy === 'RATING_ASC') return (a.rating ?? 11) - (b.rating ?? 11);
+      if (sortBy === 'TITLE_ASC') return a.media.title.localeCompare(b.media.title);
+
+      const aPct = a.media.totalUnits > 0 ? a.progress / a.media.totalUnits : 0;
+      const bPct = b.media.totalUnits > 0 ? b.progress / b.media.totalUnits : 0;
+      return bPct - aPct;
+    });
+
+    return sorted;
+  }, [allData, activeType, activeStatus, sortBy]);
 
   const handleTypeChange = (type: string) => {
     setActiveType(type);
@@ -82,96 +131,129 @@ const Shelf: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Left: branding */}
-            <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shelf</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{user?.username}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">Shelf</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px] sm:max-w-[280px]">{user?.username}</p>
             </div>
 
-            {/* Center: type nav */}
-            <nav className="flex items-center gap-1">
-              {typeTabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => handleTypeChange(tab)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                    activeType === tab
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  {typeLabels[tab]}
-                </button>
-              ))}
-            </nav>
-
             {/* Right: actions */}
-            <div className="flex-shrink-0 flex gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                type="button"
+                onClick={() => setIsDarkMode((prev) => !prev)}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition"
+                aria-label="Toggle theme"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
-                <Plus className="w-5 h-5" />
-                Add Media
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
-                onClick={logout}
-                className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition"
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
               >
-                <LogOut className="w-5 h-5" />
-                Logout
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Media</span>
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Secondary: status tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-1">
-            {/* All statuses pill */}
+          <div className="md:hidden border-t border-gray-100 dark:border-gray-700 pt-3">
             <button
-              onClick={() => setActiveStatus('ALL')}
-              className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition ${
-                activeStatus === 'ALL'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-              }`}
+              type="button"
+              onClick={() => setShowMobileFilters((prev) => !prev)}
+              className="w-full inline-flex items-center justify-between px-3 h-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-200"
             >
-              All
+              <span className="inline-flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Filters and Sort</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
             </button>
-            {statusTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveStatus(tab)}
-                className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition ${
-                  activeStatus === tab
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                }`}
+          </div>
+
+          <div className={`${showMobileFilters ? 'grid' : 'hidden'} md:grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-100 dark:border-gray-700 pt-3`}>
+            <label className="min-w-0">
+              <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Type</span>
+              <select
+                value={activeType}
+                onChange={(e) => {
+                  handleTypeChange(e.target.value);
+                  setShowMobileFilters(false);
+                }}
+                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {statusLabel(tab)}
-              </button>
-            ))}
+                {typeTabs.map((tab) => (
+                  <option key={tab} value={tab}>{typeLabels[tab]}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="min-w-0">
+              <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</span>
+              <select
+                value={activeStatus}
+                onChange={(e) => {
+                  setActiveStatus(e.target.value);
+                  setShowMobileFilters(false);
+                }}
+                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All</option>
+                {statusTabs.map((tab) => (
+                  <option key={tab} value={tab}>{statusLabel(tab)}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="min-w-0">
+              <span className="mb-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <SlidersHorizontal className="w-3 h-3" /> Sort By
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as SortOption);
+                  setShowMobileFilters(false);
+                }}
+                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
       </header>
 
       {/* Activity Heatmap */}
       {!loading && allData.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-          <ActivityHeatmap allData={allData} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <ActivityHeatmap allData={allData} />
+          </div>
+          <div className="hidden lg:block">
+            <ConsumptionByTypeChart allData={allData} />
+          </div>
         </div>
       )}
 
       {/* Count bar */}
       {!loading && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
             {countLabel()}
           </p>
         </div>

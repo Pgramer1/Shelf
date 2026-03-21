@@ -64,6 +64,10 @@ export interface SignupRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
 export interface MediaRequest {
   title: string;
   type: MediaType;
