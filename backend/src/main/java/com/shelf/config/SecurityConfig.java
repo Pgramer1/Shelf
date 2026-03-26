@@ -40,7 +40,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    // OAuth2 beans are optional — only present when Google credentials are configured
+    // OAuth2 beans are optional — only present when Google credentials are
+    // configured
     @Autowired(required = false)
     private ClientRegistrationRepository clientRegistrationRepository;
 
@@ -67,7 +68,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/login/oauth2/**", "/error", "/actuator/health").permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/login/oauth2/**", "/error", "/actuator/health",
+                                "/health")
+                        .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
