@@ -58,8 +58,10 @@ public class UserMediaService {
         userMedia.setStatus(request.getStatus());
         int requestedProgress = request.getProgress() == null ? 0 : request.getProgress();
         int initialProgress = requestedProgress;
-        if (request.getStatus() == Status.COMPLETED && requestedProgress == 0 && media.getTotalUnits() != null && media.getTotalUnits() > 0) {
-            // If user adds an item as completed without setting progress, infer full consumption.
+        if (request.getStatus() == Status.COMPLETED && requestedProgress == 0 && media.getTotalUnits() != null
+                && media.getTotalUnits() > 0) {
+            // If user adds an item as completed without setting progress, infer full
+            // consumption.
             initialProgress = media.getTotalUnits();
         }
         userMedia.setProgress(initialProgress);
@@ -85,7 +87,7 @@ public class UserMediaService {
 
         UserMedia saved = userMediaRepository.save(userMedia);
         LocalDateTime consumedAt = saved.getCompletedAt() != null ? saved.getCompletedAt()
-            : (saved.getStartedAt() != null ? saved.getStartedAt() : LocalDateTime.now());
+                : (saved.getStartedAt() != null ? saved.getStartedAt() : LocalDateTime.now());
         int addActivityProgress = Math.max(1, saved.getProgress() == null ? 0 : saved.getProgress());
         recordConsumptionIfProgressed(user, saved, 0, addActivityProgress, consumedAt, ConsumptionEventType.ADD);
         return mapToResponse(saved);
@@ -128,7 +130,8 @@ public class UserMediaService {
             userMedia.setCompletedAt(LocalDateTime.now());
         }
 
-        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, LocalDateTime.now(), ConsumptionEventType.PROGRESS);
+        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, LocalDateTime.now(),
+                ConsumptionEventType.PROGRESS);
 
         UserMedia updated = userMediaRepository.save(userMedia);
         return mapToResponse(updated);
@@ -144,7 +147,7 @@ public class UserMediaService {
         LocalDateTime end = LocalDateTime.now();
 
         List<ConsumptionLog> logs = consumptionLogRepository
-            .findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
+                .findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
 
         Map<LocalDate, List<ConsumptionLog>> grouped = logs.stream()
                 .collect(Collectors.groupingBy(log -> log.getConsumedAt().toLocalDate()));
@@ -175,7 +178,7 @@ public class UserMediaService {
         LocalDateTime end = day.atTime(LocalTime.MAX);
 
         List<ConsumptionLog> logs = consumptionLogRepository
-            .findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
+                .findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
 
         Map<Long, List<ConsumptionLog>> byUserMedia = logs.stream()
                 .collect(Collectors.groupingBy(log -> log.getUserMedia().getId()));
@@ -195,7 +198,7 @@ public class UserMediaService {
                             first.getUserMedia().getMedia().getId(),
                             first.getUserMedia().getMedia().getTitle(),
                             first.getUserMedia().getMedia().getType(),
-                        addOnlyActivity,
+                            addOnlyActivity,
                             unitsConsumed,
                             Math.max(fromUnit, 1),
                             toUnit);
