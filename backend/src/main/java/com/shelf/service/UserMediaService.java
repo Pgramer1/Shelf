@@ -151,8 +151,7 @@ public class UserMediaService {
                             entry.getKey().toString(),
                             titles.size(),
                             unitsConsumed,
-                            titles.stream().sorted().collect(Collectors.toList())
-                    );
+                            titles.stream().sorted().collect(Collectors.toList()));
                 })
                 .collect(Collectors.toList());
     }
@@ -185,8 +184,7 @@ public class UserMediaService {
                             first.getUserMedia().getMedia().getType(),
                             unitsConsumed,
                             Math.max(fromUnit, 1),
-                            toUnit
-                    );
+                            toUnit);
                 })
                 .sorted(Comparator.comparing(DayConsumptionItemResponse::getTitle))
                 .collect(Collectors.toList());
@@ -253,7 +251,8 @@ public class UserMediaService {
                 userMedia.getUpdatedAt());
     }
 
-    private void recordConsumptionIfProgressed(User user, UserMedia userMedia, Integer previousProgress, Integer nextProgress) {
+    private void recordConsumptionIfProgressed(User user, UserMedia userMedia, Integer previousProgress,
+            Integer nextProgress) {
         int from = previousProgress == null ? 0 : previousProgress;
         int to = nextProgress == null ? 0 : nextProgress;
         if (to <= from) {

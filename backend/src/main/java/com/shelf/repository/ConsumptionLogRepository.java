@@ -9,5 +9,6 @@ import java.util.List;
 
 @Repository
 public interface ConsumptionLogRepository extends JpaRepository<ConsumptionLog, Long> {
-    List<ConsumptionLog> findByUserIdAndConsumedAtBetweenOrderByConsumedAtAsc(Long userId, LocalDateTime start, LocalDateTime end);
+    List<ConsumptionLog> findByUserIdAndConsumedAtBetweenOrderByConsumedAtAsc(Long userId, LocalDateTime start,
+            LocalDateTime end);
 }
