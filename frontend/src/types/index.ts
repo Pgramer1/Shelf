@@ -87,3 +87,27 @@ export interface UserMediaRequest {
   startedAt?: string;
   completedAt?: string;
 }
+
+export interface HeatmapDayActivity {
+  date: string;
+  titleCount: number;
+  unitsConsumed: number;
+  titles: string[];
+}
+
+export interface DayConsumptionItem {
+  userMediaId: number;
+  mediaId: number;
+  title: string;
+  mediaType: MediaType;
+  unitsConsumed: number;
+  fromUnit: number;
+  toUnit: number;
+}
+
+export interface DayConsumption {
+  date: string;
+  totalTitles: number;
+  totalUnits: number;
+  items: DayConsumptionItem[];
+}

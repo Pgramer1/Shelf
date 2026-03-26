@@ -68,7 +68,8 @@ public class AuthService {
 
     public String forgotPassword(ForgotPasswordRequest request) {
         // For now, keep this response generic to avoid leaking whether an email exists.
-        // Hook actual reset-token email delivery here when email infrastructure is added.
+        // Hook actual reset-token email delivery here when email infrastructure is
+        // added.
         return "If an account exists for this email, reset instructions have been sent.(yet to be implemented)";
     }
 }

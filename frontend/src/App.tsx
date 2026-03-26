@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Shelf from './pages/Shelf';
 import OAuthCallback from './pages/OAuthCallback';
+import ActivityDayDetails from './pages/ActivityDayDetails';
 
 const OAuthQueryHandler: React.FC = () => {
   const location = useLocation();
@@ -48,6 +49,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <Shelf />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/activity/:date"
+            element={
+              <PrivateRoute>
+                <ActivityDayDetails />
               </PrivateRoute>
             }
           />

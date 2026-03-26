@@ -1,12 +1,17 @@
 package com.shelf.service;
 
 import com.shelf.dto.MediaResponse;
+import com.shelf.dto.ActivityHeatmapDayResponse;
+import com.shelf.dto.DayConsumptionItemResponse;
+import com.shelf.dto.DayConsumptionResponse;
 import com.shelf.dto.UserMediaRequest;
 import com.shelf.dto.UserMediaResponse;
+import com.shelf.model.ConsumptionLog;
 import com.shelf.model.Media;
 import com.shelf.model.Status;
 import com.shelf.model.User;
 import com.shelf.model.UserMedia;
+import com.shelf.repository.ConsumptionLogRepository;
 import com.shelf.repository.MediaRepository;
 import com.shelf.repository.UserMediaRepository;
 import com.shelf.repository.UserRepository;
@@ -14,8 +19,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +34,7 @@ import java.util.stream.Collectors;
 public class UserMediaService {
 
     private final UserMediaRepository userMediaRepository;
+    private final ConsumptionLogRepository consumptionLogRepository;
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
 
@@ -43,7 +55,7 @@ public class UserMediaService {
         userMedia.setUser(user);
         userMedia.setMedia(media);
         userMedia.setStatus(request.getStatus());
-        userMedia.setProgress(request.getProgress());
+        userMedia.setProgress(request.getProgress() == null ? 0 : request.getProgress());
         userMedia.setRating(request.getRating());
         userMedia.setNotes(request.getNotes());
         userMedia.setIsFavorite(request.getIsFavorite());
@@ -80,8 +92,11 @@ public class UserMediaService {
             throw new RuntimeException("Unauthorized");
         }
 
+        Integer previousProgress = userMedia.getProgress() == null ? 0 : userMedia.getProgress();
+        Integer nextProgress = request.getProgress() == null ? 0 : request.getProgress();
+
         userMedia.setStatus(request.getStatus());
-        userMedia.setProgress(request.getProgress());
+        userMedia.setProgress(nextProgress);
         userMedia.setRating(request.getRating());
         userMedia.setNotes(request.getNotes());
         userMedia.setIsFavorite(request.getIsFavorite());
@@ -102,8 +117,83 @@ public class UserMediaService {
             userMedia.setCompletedAt(LocalDateTime.now());
         }
 
+        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress);
+
         UserMedia updated = userMediaRepository.save(userMedia);
         return mapToResponse(updated);
+    }
+
+    public List<ActivityHeatmapDayResponse> getConsumptionHeatmap(String username, int days) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        int safeDays = Math.max(1, Math.min(days, 730));
+        LocalDate startDate = LocalDate.now().minusDays(safeDays - 1L);
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = LocalDateTime.now();
+
+        List<ConsumptionLog> logs = consumptionLogRepository
+                .findByUserIdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
+
+        Map<LocalDate, List<ConsumptionLog>> grouped = logs.stream()
+                .collect(Collectors.groupingBy(log -> log.getConsumedAt().toLocalDate()));
+
+        return grouped.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    Set<String> titles = new HashSet<>();
+                    int unitsConsumed = 0;
+                    for (ConsumptionLog log : entry.getValue()) {
+                        titles.add(log.getUserMedia().getMedia().getTitle());
+                        unitsConsumed += log.getUnitsConsumed();
+                    }
+                    return new ActivityHeatmapDayResponse(
+                            entry.getKey().toString(),
+                            titles.size(),
+                            unitsConsumed,
+                            titles.stream().sorted().collect(Collectors.toList())
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    public DayConsumptionResponse getDayConsumption(String username, LocalDate day) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        LocalDateTime start = day.atStartOfDay();
+        LocalDateTime end = day.atTime(LocalTime.MAX);
+
+        List<ConsumptionLog> logs = consumptionLogRepository
+                .findByUserIdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
+
+        Map<Long, List<ConsumptionLog>> byUserMedia = logs.stream()
+                .collect(Collectors.groupingBy(log -> log.getUserMedia().getId()));
+
+        List<DayConsumptionItemResponse> items = byUserMedia.values().stream()
+                .map(mediaLogs -> {
+                    mediaLogs.sort(Comparator.comparing(ConsumptionLog::getConsumedAt));
+                    ConsumptionLog first = mediaLogs.get(0);
+                    int unitsConsumed = mediaLogs.stream().mapToInt(ConsumptionLog::getUnitsConsumed).sum();
+                    int fromUnit = mediaLogs.stream().mapToInt(ConsumptionLog::getProgressFrom).min().orElse(0) + 1;
+                    int toUnit = mediaLogs.stream().mapToInt(ConsumptionLog::getProgressTo).max().orElse(0);
+
+                    return new DayConsumptionItemResponse(
+                            first.getUserMedia().getId(),
+                            first.getUserMedia().getMedia().getId(),
+                            first.getUserMedia().getMedia().getTitle(),
+                            first.getUserMedia().getMedia().getType(),
+                            unitsConsumed,
+                            Math.max(fromUnit, 1),
+                            toUnit
+                    );
+                })
+                .sorted(Comparator.comparing(DayConsumptionItemResponse::getTitle))
+                .collect(Collectors.toList());
+
+        int totalUnits = items.stream().mapToInt(DayConsumptionItemResponse::getUnitsConsumed).sum();
+
+        return new DayConsumptionResponse(day.toString(), items.size(), totalUnits, items);
     }
 
     public List<UserMediaResponse> getUserShelf(String username) {
@@ -161,5 +251,22 @@ public class UserMediaService {
                 userMedia.getStartedAt(),
                 userMedia.getCompletedAt(),
                 userMedia.getUpdatedAt());
+    }
+
+    private void recordConsumptionIfProgressed(User user, UserMedia userMedia, Integer previousProgress, Integer nextProgress) {
+        int from = previousProgress == null ? 0 : previousProgress;
+        int to = nextProgress == null ? 0 : nextProgress;
+        if (to <= from) {
+            return;
+        }
+
+        ConsumptionLog log = new ConsumptionLog();
+        log.setUser(user);
+        log.setUserMedia(userMedia);
+        log.setProgressFrom(from);
+        log.setProgressTo(to);
+        log.setUnitsConsumed(to - from);
+        log.setConsumedAt(LocalDateTime.now());
+        consumptionLogRepository.save(log);
     }
 }

@@ -1,5 +1,7 @@
 package com.shelf.controller;
 
+import com.shelf.dto.ActivityHeatmapDayResponse;
+import com.shelf.dto.DayConsumptionResponse;
 import com.shelf.dto.UserMediaRequest;
 import com.shelf.dto.UserMediaResponse;
 import com.shelf.model.Status;
@@ -8,8 +10,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -48,6 +52,22 @@ public class UserMediaController {
             @PathVariable Status status) {
         String username = authentication.getName();
         return ResponseEntity.ok(userMediaService.getUserShelfByStatus(username, status));
+    }
+
+    @GetMapping("/activity/heatmap")
+    public ResponseEntity<List<ActivityHeatmapDayResponse>> getConsumptionHeatmap(
+            Authentication authentication,
+            @RequestParam(name = "days", defaultValue = "371") int days) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(userMediaService.getConsumptionHeatmap(username, days));
+    }
+
+    @GetMapping("/activity/{date}")
+    public ResponseEntity<DayConsumptionResponse> getConsumptionByDate(
+            Authentication authentication,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(userMediaService.getDayConsumption(username, date));
     }
 
     @DeleteMapping("/{id}")

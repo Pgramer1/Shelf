@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
-import { UserMedia, MediaType } from '../types';
+import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
 import { ChevronDown, LogOut, Moon, Plus, SlidersHorizontal, Star, Sun } from 'lucide-react';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
@@ -54,6 +54,7 @@ const Shelf: React.FC = () => {
   const [activeType, setActiveType]     = useState<string>('ALL');
   const [activeStatus, setActiveStatus] = useState<string>('ALL');
   const [allData, setAllData]           = useState<UserMedia[]>([]);
+  const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
   const [loading, setLoading]           = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('UPDATED_DESC');
@@ -77,7 +78,12 @@ const Shelf: React.FC = () => {
   const loadShelfData = async () => {
     setLoading(true);
     try {
-      setAllData(await shelfService.getUserShelf());
+      const [shelf, heatmap] = await Promise.all([
+        shelfService.getUserShelf(),
+        shelfService.getConsumptionHeatmap(),
+      ]);
+      setAllData(shelf);
+      setHeatmapData(heatmap);
     } catch (error) {
       console.error('Failed to load shelf data:', error);
     } finally {
@@ -242,7 +248,7 @@ const Shelf: React.FC = () => {
       {!loading && allData.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <ActivityHeatmap allData={allData} />
+            <ActivityHeatmap activityDays={heatmapData} />
           </div>
           <div className="hidden lg:block">
             <ConsumptionByTypeChart allData={allData} />

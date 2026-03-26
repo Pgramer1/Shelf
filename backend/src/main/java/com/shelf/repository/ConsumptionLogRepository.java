@@ -1,0 +1,13 @@
+package com.shelf.repository;
+
+import com.shelf.model.ConsumptionLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+public interface ConsumptionLogRepository extends JpaRepository<ConsumptionLog, Long> {
+    List<ConsumptionLog> findByUserIdAndConsumedAtBetweenOrderByConsumedAtAsc(Long userId, LocalDateTime start, LocalDateTime end);
+}

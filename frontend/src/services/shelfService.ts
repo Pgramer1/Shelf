@@ -1,5 +1,5 @@
 import api from './api';
-import { UserMedia, UserMediaRequest, Status } from '../types';
+import { DayConsumption, HeatmapDayActivity, UserMedia, UserMediaRequest, Status } from '../types';
 
 export const shelfService = {
   async addToShelf(data: UserMediaRequest): Promise<UserMedia> {
@@ -24,5 +24,15 @@ export const shelfService = {
 
   async deleteFromShelf(id: number): Promise<void> {
     await api.delete(`/shelf/${id}`);
+  },
+
+  async getConsumptionHeatmap(days = 371): Promise<HeatmapDayActivity[]> {
+    const response = await api.get<HeatmapDayActivity[]>(`/shelf/activity/heatmap?days=${days}`);
+    return response.data;
+  },
+
+  async getConsumptionByDate(date: string): Promise<DayConsumption> {
+    const response = await api.get<DayConsumption>(`/shelf/activity/${date}`);
+    return response.data;
   }
 };
