@@ -35,6 +35,10 @@ public class ConsumptionLog {
     @Column(nullable = false)
     private Integer unitsConsumed;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "event_type")
+    private ConsumptionEventType eventType;
+
     @Column(nullable = false)
     private LocalDateTime consumedAt;
 }

@@ -13,6 +13,7 @@ public class DayConsumptionItemResponse {
     private Long mediaId;
     private String title;
     private MediaType mediaType;
+    private Boolean addOnlyActivity;
     private Integer unitsConsumed;
     private Integer fromUnit;
     private Integer toUnit;

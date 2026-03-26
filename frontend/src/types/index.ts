@@ -100,6 +100,7 @@ export interface DayConsumptionItem {
   mediaId: number;
   title: string;
   mediaType: MediaType;
+  addOnlyActivity: boolean;
   unitsConsumed: number;
   fromUnit: number;
   toUnit: number;

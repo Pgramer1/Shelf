@@ -15,6 +15,10 @@ const getUnitLabel = (mediaType: MediaType, units: number) => {
 };
 
 const getRangeLabel = (item: DayConsumptionItem) => {
+  if (item.addOnlyActivity) {
+    return 'Added to shelf';
+  }
+
   const unitLabel = getUnitLabel(item.mediaType, item.unitsConsumed);
   if (item.mediaType === MediaType.BOOK) {
     return `${item.unitsConsumed} ${unitLabel} read (${item.fromUnit}-${item.toUnit})`;

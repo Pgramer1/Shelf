@@ -18,10 +18,10 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 function cellColor(count: number): string {
   if (count === 0) return 'bg-slate-100 dark:bg-slate-800';
-  if (count === 1) return 'bg-cyan-200 dark:bg-cyan-900/80';
-  if (count <= 3) return 'bg-cyan-400 dark:bg-cyan-700';
-  if (count <= 6) return 'bg-teal-500 dark:bg-teal-500';
-  return 'bg-teal-700 dark:bg-teal-400';
+  if (count === 1) return 'bg-sky-200 dark:bg-indigo-500/70';
+  if (count <= 3) return 'bg-sky-400 dark:bg-violet-500/80';
+  if (count <= 6) return 'bg-cyan-500 dark:bg-fuchsia-500/85';
+  return 'bg-teal-700 dark:bg-rose-400';
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
@@ -128,7 +128,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
       </div>
 
       <div className="overflow-x-auto pb-1">
-        <div className="w-max min-w-full rounded-xl p-2 border border-gray-100 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-800">
+        <div className="w-max min-w-full rounded-xl p-2 border border-gray-100 dark:border-slate-600 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900">
           <div className="flex gap-[3px] mb-2 ml-8">
             {weeks.map((_, ci) => {
               const label = monthLabels.find((l) => l.col === ci);
@@ -156,7 +156,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
                     <button
                       type="button"
                       key={day.date}
-                      className={`w-[12px] h-[12px] rounded-[3px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-cyan-300 dark:hover:ring-cyan-600' : 'cursor-default'}`}
+                      className={`w-[12px] h-[12px] rounded-[3px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-cyan-300 dark:hover:ring-fuchsia-300' : 'cursor-default'}`}
                       onMouseEnter={(e) => handleMouseEnter(e, day)}
                       onMouseLeave={() => setTooltip(null)}
                       onClick={() => openDetails(day)}
