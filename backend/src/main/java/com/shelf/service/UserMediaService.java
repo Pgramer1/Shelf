@@ -88,8 +88,8 @@ public class UserMediaService {
         UserMedia saved = userMediaRepository.save(userMedia);
         LocalDateTime consumedAt = saved.getCompletedAt() != null ? saved.getCompletedAt()
                 : (saved.getStartedAt() != null ? saved.getStartedAt() : LocalDateTime.now());
-        int addActivityProgress = Math.max(1, saved.getProgress() == null ? 0 : saved.getProgress());
-        recordConsumptionIfProgressed(user, saved, 0, addActivityProgress, consumedAt, ConsumptionEventType.ADD);
+        int addActivityProgress = Math.max(0, saved.getProgress() == null ? 0 : saved.getProgress());
+        recordAddActivity(user, saved, addActivityProgress, consumedAt);
         return mapToResponse(saved);
     }
 
@@ -130,7 +130,8 @@ public class UserMediaService {
             userMedia.setCompletedAt(LocalDateTime.now());
         }
 
-        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, LocalDateTime.now(),
+        LocalDateTime consumedAt = request.getActivityAt() != null ? request.getActivityAt() : LocalDateTime.now();
+        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, consumedAt,
                 ConsumptionEventType.PROGRESS);
 
         UserMedia updated = userMediaRepository.save(userMedia);
@@ -267,6 +268,24 @@ public class UserMediaService {
                 userMedia.getCompletedAt(),
                 userMedia.getUpdatedAt());
     }
+
+        private void recordAddActivity(User user, UserMedia userMedia, Integer initialProgress, LocalDateTime consumedAt) {
+                int progress = initialProgress == null ? 0 : Math.max(0, initialProgress);
+                if (progress > 0) {
+                        recordConsumptionIfProgressed(user, userMedia, 0, progress, consumedAt, ConsumptionEventType.ADD);
+                        return;
+                }
+
+                ConsumptionLog log = new ConsumptionLog();
+                log.setUser(user);
+                log.setUserMedia(userMedia);
+                log.setProgressFrom(0);
+                log.setProgressTo(0);
+                log.setUnitsConsumed(0);
+                log.setEventType(ConsumptionEventType.ADD);
+                log.setConsumedAt(consumedAt == null ? LocalDateTime.now() : consumedAt);
+                consumptionLogRepository.save(log);
+        }
 
     private void recordConsumptionIfProgressed(User user, UserMedia userMedia, Integer previousProgress,
             Integer nextProgress, LocalDateTime consumedAt, ConsumptionEventType eventType) {

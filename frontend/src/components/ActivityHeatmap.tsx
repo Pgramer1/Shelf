@@ -77,9 +77,11 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
     const labels: { col: number; label: string }[] = [];
     let lastMonth = -1;
     weeks.forEach((col, ci) => {
-      const month = new Date(col[0].date).getMonth();
+      const parts = col[0].date.split('-');
+      const parsedMonth = parts.length >= 2 ? Number(parts[1]) - 1 : 0;
+      const month = Number.isNaN(parsedMonth) ? 0 : parsedMonth;
       if (month !== lastMonth) {
-        labels.push({ col: ci, label: MONTHS[month] });
+        labels.push({ col: ci, label: MONTHS[month] ?? MONTHS[0] });
         lastMonth = month;
       }
     });

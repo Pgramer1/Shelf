@@ -86,6 +86,7 @@ export interface UserMediaRequest {
   isFavorite?: boolean;
   startedAt?: string;
   completedAt?: string;
+  activityAt?: string;
 }
 
 export interface HeatmapDayActivity {

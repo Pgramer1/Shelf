@@ -11,12 +11,19 @@ const getUnitLabel = (mediaType: MediaType, units: number) => {
   if (mediaType === MediaType.GAME) {
     return units === 1 ? 'level' : 'levels';
   }
-  return units === 1 ? 'episode' : 'episodes';
+  if (mediaType === MediaType.TV_SERIES || mediaType === MediaType.ANIME) {
+    return units === 1 ? 'episode' : 'episodes';
+  }
+  return units === 1 ? 'unit' : 'units';
 };
 
 const getRangeLabel = (item: DayConsumptionItem) => {
   if (item.addOnlyActivity) {
     return 'Added to shelf';
+  }
+
+  if (item.mediaType === MediaType.MOVIE) {
+    return 'Watched';
   }
 
   const unitLabel = getUnitLabel(item.mediaType, item.unitsConsumed);
