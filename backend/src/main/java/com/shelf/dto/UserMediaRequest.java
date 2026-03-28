@@ -28,4 +28,5 @@ public class UserMediaRequest {
     private Boolean isFavorite = false;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
+    private LocalDateTime activityAt;
 }

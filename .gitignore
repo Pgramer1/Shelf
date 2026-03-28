@@ -78,6 +78,8 @@ backend/*.mv.db
 # PostgreSQL
 *.sql
 *.dump
+!backend/scripts/
+!backend/scripts/*.sql
 
 # ===========================================
 # IDE & EDITOR FILES

@@ -18,12 +18,23 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
   const [editingProgress, setEditingProgress] = useState(false);
   const [editValue, setEditValue] = useState('');
 
+  const toLocalDateTimeString = (value: Date) => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    const hours = String(value.getHours()).padStart(2, '0');
+    const minutes = String(value.getMinutes()).padStart(2, '0');
+    const seconds = String(value.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
   const handleProgressChange = async (newProgress: number) => {
     if (newProgress < 0 || newProgress > userMedia.media.totalUnits || updating) return;
     setLocalProgress(newProgress);
     setUpdating(true);
     try {
       const isNowComplete = newProgress === userMedia.media.totalUnits;
+      const activityAt = toLocalDateTimeString(new Date());
       await shelfService.updateMedia(userMedia.id, {
         mediaId: userMedia.media.id,
         status: isNowComplete ? Status.COMPLETED : userMedia.status === Status.COMPLETED ? Status.WATCHING : userMedia.status,
@@ -32,7 +43,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
         notes: userMedia.notes,
         isFavorite: userMedia.isFavorite,
         startedAt: userMedia.startedAt,
-        completedAt: isNowComplete ? new Date().toISOString() : userMedia.completedAt,
+        completedAt: isNowComplete ? activityAt : userMedia.completedAt,
+        activityAt,
       });
       onUpdate();
     } catch {

@@ -18,6 +18,17 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const localDateTimeNow = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -31,6 +42,7 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
         rating,
         notes: notes || undefined,
         isFavorite,
+        activityAt: localDateTimeNow(),
       });
       onSuccess();
     } catch (err: any) {
