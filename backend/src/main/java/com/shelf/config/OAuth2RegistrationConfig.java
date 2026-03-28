@@ -15,8 +15,8 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 //   - application.yml properties: spring.security.oauth2.client.registration.google.client-id / .client-secret
 @Configuration
 @ConditionalOnExpression("((!'${GOOGLE_CLIENT_ID:}'.isEmpty() and !'${GOOGLE_CLIENT_SECRET:}'.isEmpty()) " +
-    "or (!'${spring.security.oauth2.client.registration.google.client-id:}'.isEmpty() " +
-    "and !'${spring.security.oauth2.client.registration.google.client-secret:}'.isEmpty()))")
+        "or (!'${spring.security.oauth2.client.registration.google.client-id:}'.isEmpty() " +
+        "and !'${spring.security.oauth2.client.registration.google.client-secret:}'.isEmpty()))")
 public class OAuth2RegistrationConfig {
 
     @Value("${GOOGLE_CLIENT_ID:}")

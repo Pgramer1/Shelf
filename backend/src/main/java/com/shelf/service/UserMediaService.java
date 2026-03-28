@@ -269,23 +269,23 @@ public class UserMediaService {
                 userMedia.getUpdatedAt());
     }
 
-        private void recordAddActivity(User user, UserMedia userMedia, Integer initialProgress, LocalDateTime consumedAt) {
-                int progress = initialProgress == null ? 0 : Math.max(0, initialProgress);
-                if (progress > 0) {
-                        recordConsumptionIfProgressed(user, userMedia, 0, progress, consumedAt, ConsumptionEventType.ADD);
-                        return;
-                }
-
-                ConsumptionLog log = new ConsumptionLog();
-                log.setUser(user);
-                log.setUserMedia(userMedia);
-                log.setProgressFrom(0);
-                log.setProgressTo(0);
-                log.setUnitsConsumed(0);
-                log.setEventType(ConsumptionEventType.ADD);
-                log.setConsumedAt(consumedAt == null ? LocalDateTime.now() : consumedAt);
-                consumptionLogRepository.save(log);
+    private void recordAddActivity(User user, UserMedia userMedia, Integer initialProgress, LocalDateTime consumedAt) {
+        int progress = initialProgress == null ? 0 : Math.max(0, initialProgress);
+        if (progress > 0) {
+            recordConsumptionIfProgressed(user, userMedia, 0, progress, consumedAt, ConsumptionEventType.ADD);
+            return;
         }
+
+        ConsumptionLog log = new ConsumptionLog();
+        log.setUser(user);
+        log.setUserMedia(userMedia);
+        log.setProgressFrom(0);
+        log.setProgressTo(0);
+        log.setUnitsConsumed(0);
+        log.setEventType(ConsumptionEventType.ADD);
+        log.setConsumedAt(consumedAt == null ? LocalDateTime.now() : consumedAt);
+        consumptionLogRepository.save(log);
+    }
 
     private void recordConsumptionIfProgressed(User user, UserMedia userMedia, Integer previousProgress,
             Integer nextProgress, LocalDateTime consumedAt, ConsumptionEventType eventType) {

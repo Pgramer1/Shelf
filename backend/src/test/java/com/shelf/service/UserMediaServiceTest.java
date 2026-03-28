@@ -64,7 +64,8 @@ class UserMediaServiceTest {
             saved.setId(100L);
             return saved;
         });
-        when(consumptionLogRepository.save(any(ConsumptionLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(consumptionLogRepository.save(any(ConsumptionLog.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         userMediaService.addToShelf("alice", request);
 
@@ -96,7 +97,8 @@ class UserMediaServiceTest {
             saved.setId(101L);
             return saved;
         });
-        when(consumptionLogRepository.save(any(ConsumptionLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(consumptionLogRepository.save(any(ConsumptionLog.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         userMediaService.addToShelf("alice", request);
 
@@ -124,7 +126,8 @@ class UserMediaServiceTest {
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         when(userMediaRepository.findById(200L)).thenReturn(Optional.of(existing));
         when(userMediaRepository.save(any(UserMedia.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(consumptionLogRepository.save(any(ConsumptionLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(consumptionLogRepository.save(any(ConsumptionLog.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         userMediaService.updateMedia("alice", 200L, request);
 
