@@ -165,7 +165,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+    <div className="insight-card-enter bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
         <div>
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Watch History</h3>
@@ -184,9 +184,9 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
               ))}
             </select>
           </label>
-          <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">{totalActiveDays} active days</span>
-          <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">{totalTitlesConsumed} titles</span>
-          <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">{totalUnitsConsumed} units</span>
+          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalActiveDays} active days</span>
+          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalTitlesConsumed} titles</span>
+          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalUnitsConsumed} units</span>
         </div>
       </div>
 

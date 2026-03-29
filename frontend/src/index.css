@@ -14,3 +14,29 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+@layer components {
+  .insight-card-enter {
+    animation: insight-card-enter 0.45s ease-out both;
+  }
+
+  .insight-detail-panel {
+    @apply rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100/80 dark:bg-gray-700/70 px-3 py-2;
+  }
+
+  .insight-chip {
+    @apply inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium;
+  }
+}
+
+@keyframes insight-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

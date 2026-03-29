@@ -18,7 +18,10 @@ import {
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
 import ActivityHeatmap from '../components/ActivityHeatmap';
-import ConsumptionByTypeChart from '../components/ConsumptionByTypeChart';
+import RatingDistributionChart from '../components/RatingDistributionChart';
+import FavoritesBreakdownChart from '../components/FavoritesBreakdownChart';
+import MonthlyRatingTrendChart from '../components/MonthlyRatingTrendChart';
+import CompletionFunnelChart from '../components/CompletionFunnelChart';
 
 const typeLabels: Record<string, string> = {
   ALL: 'All',
@@ -334,12 +337,14 @@ const Shelf: React.FC = () => {
                   <p className="text-gray-600 dark:text-gray-400">Add media and update progress to unlock activity analytics.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                  <div className="xl:col-span-2">
-                    <ActivityHeatmap activityDays={heatmapData} />
-                  </div>
-                  <div>
-                    <ConsumptionByTypeChart allData={allData} />
+                <div className="space-y-4">
+                  <ActivityHeatmap activityDays={heatmapData} />
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <RatingDistributionChart allData={allData} />
+                    <FavoritesBreakdownChart allData={allData} />
+                    <MonthlyRatingTrendChart allData={allData} />
+                    <CompletionFunnelChart allData={allData} />
                   </div>
                 </div>
               )}
