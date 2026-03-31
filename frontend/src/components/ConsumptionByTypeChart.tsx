@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { MediaType, UserMedia } from '../types';
 
 interface ConsumptionByTypeChartProps {
@@ -23,22 +24,11 @@ const typeColors: Record<MediaType, string> = {
 
 interface Slice {
   type: MediaType;
+  name: string;
   value: number;
+  chartValue: number;
   percentage: number;
-  start: number;
-  end: number;
-}
-
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-  const a = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-}
-
-function describeDonutArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
-  const start = polarToCartesian(cx, cy, r, endAngle);
-  const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+  fill: string;
 }
 
 const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData }) => {
@@ -53,29 +43,15 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
     }
 
     const total = baseTypes.reduce((sum, type) => sum + (counts.get(type) ?? 0), 0);
-    if (!total) {
-      return baseTypes.map((type, i) => ({
-        type,
-        value: 0,
-        percentage: 0,
-        start: i * (360 / baseTypes.length),
-        end: (i + 1) * (360 / baseTypes.length),
-      }));
-    }
-
-    let cursor = 0;
     return baseTypes.map((type) => {
       const value = counts.get(type) ?? 0;
-      const angle = (value / total) * 360;
-      const start = cursor;
-      const end = cursor + angle;
-      cursor += angle;
       return {
         type,
+        name: typeNames[type],
         value,
-        percentage: (value / total) * 100,
-        start,
-        end,
+        chartValue: total > 0 ? value : 1,
+        percentage: total > 0 ? (value / total) * 100 : 0,
+        fill: typeColors[type],
       };
     });
   }, [allData]);
@@ -84,6 +60,8 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
 
   const highlighted = slices.find((s) => s.type === activeType) ?? slices[0];
 
+  const activeIndex = Math.max(0, slices.findIndex((slice) => slice.type === activeType));
+
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Content Mix</h3>
@@ -91,24 +69,46 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
 
       <div className="grid grid-cols-[180px_1fr] gap-5 items-center">
         <div className="relative">
-          <svg viewBox="0 0 220 220" className="w-[180px] h-[180px]">
-            <circle cx="110" cy="110" r="70" fill="none" stroke="rgba(148,163,184,0.2)" strokeWidth="34" />
-            {slices.map((slice) => {
-              const isActive = activeType === slice.type;
-              return (
-                <path
-                  key={slice.type}
-                  d={describeDonutArc(110, 110, 70, slice.start, slice.end || slice.start + 0.00001)}
-                  fill="none"
-                  stroke={typeColors[slice.type]}
-                  strokeWidth={isActive ? 38 : 34}
-                  strokeLinecap="round"
-                  className="cursor-pointer transition-all duration-150"
-                  onMouseEnter={() => setActiveType(slice.type)}
+          <div className="w-[180px] h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={slices}
+                  dataKey="chartValue"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={72}
+                  paddingAngle={2}
+                  activeIndex={activeIndex}
+                  onMouseEnter={(_entry, index) => {
+                    const slice = slices[index];
+                    if (slice) {
+                      setActiveType(slice.type);
+                    }
+                  }}
+                  onClick={(_entry, index) => {
+                    const slice = slices[index];
+                    if (slice) {
+                      setActiveType(slice.type);
+                    }
+                  }}
+                >
+                  {slices.map((slice) => (
+                    <Cell key={slice.type} fill={slice.fill} opacity={activeType === slice.type ? 1 : 0.5} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(_value: number | string, _name: string, item: { payload?: Slice }) => {
+                    const payload = item.payload;
+                    if (!payload) {
+                      return ['0 (0.0%)', 'Titles'];
+                    }
+                    return [`${payload.value} (${payload.percentage.toFixed(1)}%)`, 'Titles'];
+                  }}
                 />
-              );
-            })}
-          </svg>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">{typeNames[highlighted.type]}</span>

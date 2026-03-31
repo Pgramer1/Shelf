@@ -1,4 +1,14 @@
 import React, { useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { UserMedia } from '../types';
 
 interface RatingDistributionChartProps {
@@ -33,6 +43,10 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
   const selectedRating = activeRating ?? 10;
   const selectedCount = counts[selectedRating - 1] ?? 0;
   const selectedPercent = ratedCount > 0 ? (selectedCount / ratedCount) * 100 : 0;
+  const chartData = useMemo(
+    () => counts.map((count, index) => ({ rating: index + 1, count })),
+    [counts]
+  );
 
   return (
     <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
@@ -57,27 +71,48 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
         </div>
       </div>
 
-      <div className="h-44 grid grid-cols-10 gap-1 items-end">
-        {counts.map((count, index) => {
-          const rating = index + 1;
-          const isActive = selectedRating === rating;
-          const heightPercent = (count / maxCount) * 100;
+      <div className="h-44 mb-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <XAxis dataKey="rating" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis
+              allowDecimals={false}
+              domain={[0, maxCount]}
+              tick={{ fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              formatter={(value: number | string, _name: string, item: { payload?: { rating: number } }) => {
+                const rating = item.payload?.rating;
+                const count = Number(value);
+                return [`${count} title${count === 1 ? '' : 's'}`, `Rating ${rating ?? ''}`];
+              }}
+            />
+            <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+              {chartData.map((entry) => (
+                <Cell key={entry.rating} fill={selectedRating === entry.rating ? '#0891b2' : '#60a5fa'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-10 gap-1.5">
+        {chartData.map((entry) => {
+          const isActive = selectedRating === entry.rating;
           return (
-            <div key={rating} className="flex flex-col items-center justify-end h-full gap-1">
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 leading-none">{count}</span>
-              <div className="w-full flex-1 flex items-end">
-                <button
-                  type="button"
-                  onMouseEnter={() => setActiveRating(rating)}
-                  onFocus={() => setActiveRating(rating)}
-                  onClick={() => setActiveRating((prev) => (prev === rating ? null : rating))}
-                  className={`w-full rounded-t bg-gradient-to-t from-blue-600 to-cyan-400 dark:from-indigo-500 dark:to-fuchsia-500 transition-all ${isActive ? 'ring-2 ring-cyan-300 dark:ring-fuchsia-400 brightness-110' : 'hover:brightness-110'}`}
-                  style={{ height: `${heightPercent}%`, minHeight: count > 0 ? '6px' : '0px' }}
-                  aria-label={`Rating ${rating} has ${count} titles`}
-                />
-              </div>
-              <span className={`text-[10px] leading-none ${isActive ? 'text-blue-600 dark:text-fuchsia-300 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>{rating}</span>
-            </div>
+            <button
+              key={entry.rating}
+              type="button"
+              onMouseEnter={() => setActiveRating(entry.rating)}
+              onFocus={() => setActiveRating(entry.rating)}
+              onClick={() => setActiveRating((prev) => (prev === entry.rating ? null : entry.rating))}
+              className={`h-7 rounded-md text-[11px] font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              {entry.rating}
+            </button>
           );
         })}
       </div>

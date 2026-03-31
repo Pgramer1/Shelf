@@ -1,4 +1,14 @@
 import React, { useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { MediaType, UserMedia } from '../types';
 
 interface FavoritesBreakdownChartProps {
@@ -40,8 +50,10 @@ const FavoritesBreakdownChart: React.FC<FavoritesBreakdownChartProps> = ({ allDa
       const favoriteRate = data.total > 0 ? (data.favorites / data.total) * 100 : 0;
       return {
         type,
+        label: TYPE_LABELS[type],
         total: data.total,
         favorites: data.favorites,
+        nonFavorites: data.total - data.favorites,
         favoriteRate,
       };
     });
@@ -73,6 +85,35 @@ const FavoritesBreakdownChart: React.FC<FavoritesBreakdownChartProps> = ({ allDa
         )}
       </div>
 
+      <div className="h-52 mb-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip
+              formatter={(value: number | string, name: string) => {
+                const numeric = Number(value);
+                if (name === 'favorites') {
+                  return [`${numeric} favorite${numeric === 1 ? '' : 's'}`, 'Favorites'];
+                }
+                return [`${numeric} non-favorite${numeric === 1 ? '' : 's'}`, 'Non-favorites'];
+              }}
+            />
+            <Bar dataKey="favorites" stackId="total" radius={[8, 8, 0, 0]}>
+              {rows.map((row) => (
+                <Cell key={`favorites-${row.type}`} fill="#f59e0b" opacity={activeType === row.type ? 1 : 0.55} />
+              ))}
+            </Bar>
+            <Bar dataKey="nonFavorites" stackId="total" radius={[8, 8, 0, 0]}>
+              {rows.map((row) => (
+                <Cell key={`non-favorites-${row.type}`} fill="#94a3b8" opacity={activeType === row.type ? 1 : 0.45} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
       <div className="space-y-3">
         {rows.map((row) => (
           <button
@@ -81,17 +122,11 @@ const FavoritesBreakdownChart: React.FC<FavoritesBreakdownChartProps> = ({ allDa
             onMouseEnter={() => setActiveType(row.type)}
             onFocus={() => setActiveType(row.type)}
             onClick={() => setActiveType(row.type)}
-            className={`w-full text-left space-y-1 rounded-lg px-2 py-1.5 transition ${activeType === row.type ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-300/70 dark:border-amber-700/70' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40 border border-transparent'}`}
+            className={`w-full text-left rounded-lg px-3 py-2 border transition ${activeType === row.type ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300/70 dark:border-amber-700/70' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
           >
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs gap-3">
               <span className={`font-medium ${activeType === row.type ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}>{TYPE_LABELS[row.type]}</span>
-              <span className="text-gray-500 dark:text-gray-400">{row.favorites}/{row.total} ({row.favoriteRate.toFixed(0)}%)</span>
-            </div>
-            <div className="h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
-                style={{ width: `${row.favoriteRate}%` }}
-              />
+              <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">{row.favorites}/{row.total} ({row.favoriteRate.toFixed(0)}%)</span>
             </div>
           </button>
         ))}

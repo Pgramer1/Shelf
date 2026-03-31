@@ -1,4 +1,14 @@
 import React, { useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Status, UserMedia } from '../types';
 
 interface CompletionFunnelChartProps {
@@ -7,9 +17,10 @@ interface CompletionFunnelChartProps {
 
 const PLAN_STATUSES = new Set([Status.PLAN_TO_WATCH, Status.PLAN_TO_READ, Status.PLAN_TO_PLAY]);
 const ACTIVE_STATUSES = new Set([Status.WATCHING, Status.READING, Status.PLAYING, Status.ON_HOLD]);
+type FunnelStage = 'Planned' | 'In Progress' | 'Completed';
 
 const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }) => {
-  const [activeStage, setActiveStage] = useState<'Planned' | 'In Progress' | 'Completed'>('In Progress');
+  const [activeStage, setActiveStage] = useState<FunnelStage>('In Progress');
 
   const data = useMemo(() => {
     let planned = 0;
@@ -41,13 +52,15 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
     };
   }, [allData]);
 
-  const rows = [
-    { label: 'Planned', count: data.planned, color: 'from-slate-400 to-slate-500' },
-    { label: 'In Progress', count: data.active, color: 'from-cyan-400 to-cyan-600' },
-    { label: 'Completed', count: data.completed, color: 'from-emerald-400 to-emerald-600' },
-  ];
+  const rows = useMemo(
+    () => [
+      { label: 'Planned' as FunnelStage, count: data.planned, fill: '#64748b' },
+      { label: 'In Progress' as FunnelStage, count: data.active, fill: '#0891b2' },
+      { label: 'Completed' as FunnelStage, count: data.completed, fill: '#059669' },
+    ],
+    [data.active, data.completed, data.planned]
+  );
 
-  const maxCount = Math.max(1, ...rows.map((row) => row.count));
   const activeRow = rows.find((row) => row.label === activeStage) ?? rows[0];
   const activeShare = (activeRow.count / data.total) * 100;
 
@@ -63,30 +76,40 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
         </p>
       </div>
 
-      <div className="space-y-3 mb-4">
+      <div className="h-56 mb-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 8, right: 8, left: -18, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip
+              cursor={{ fill: 'rgba(148, 163, 184, 0.18)' }}
+              formatter={(value: number | string) => [`${Number(value)} title${Number(value) === 1 ? '' : 's'}`, 'Count']}
+            />
+            <Bar dataKey="count" radius={[10, 10, 0, 0]}>
+              {rows.map((row) => (
+                <Cell key={row.label} fill={row.fill} opacity={activeStage === row.label ? 1 : 0.45} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
         {rows.map((row) => {
           const isActive = row.label === activeStage;
-          const width = Math.max(8, (row.count / maxCount) * 100);
           return (
             <button
               type="button"
               key={row.label}
-              onMouseEnter={() => setActiveStage(row.label as 'Planned' | 'In Progress' | 'Completed')}
-              onFocus={() => setActiveStage(row.label as 'Planned' | 'In Progress' | 'Completed')}
-              onClick={() => setActiveStage(row.label as 'Planned' | 'In Progress' | 'Completed')}
-              className={`w-full text-left space-y-1 rounded-lg px-2 py-1.5 border transition ${isActive ? 'border-cyan-300 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
+              onMouseEnter={() => setActiveStage(row.label)}
+              onFocus={() => setActiveStage(row.label)}
+              onClick={() => setActiveStage(row.label)}
+              className={`w-full text-left rounded-lg px-3 py-2 border transition ${isActive ? 'border-cyan-300 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
             >
-              <div className="flex items-center justify-between text-xs">
-                <span className={`font-medium ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-700 dark:text-gray-300'}`}>{row.label}</span>
-                <span className="text-gray-500 dark:text-gray-400">{row.count}</span>
-              </div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-                <div
-                  className={`h-full rounded-lg bg-gradient-to-r ${row.color} text-white text-xs font-medium flex items-center justify-center`}
-                  style={{ width: `${width}%` }}
-                >
-                  {row.count}
-                </div>
+              <div className="text-xs">
+                <p className={`font-medium ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-700 dark:text-gray-300'}`}>{row.label}</p>
+                <p className="text-gray-500 dark:text-gray-400 mt-0.5">{row.count} title{row.count === 1 ? '' : 's'}</p>
               </div>
             </button>
           );

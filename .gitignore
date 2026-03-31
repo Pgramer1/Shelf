@@ -144,3 +144,10 @@ $RECYCLE.BIN/
 # frontend/package-lock.json
 # frontend/yarn.lock
 # frontend/pnpm-lock.yaml
+
+
+
+# ===========================================
+scripts/
+# ===========================================
+# *.py

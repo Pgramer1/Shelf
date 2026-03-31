@@ -153,7 +153,14 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
       });
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add media');
+      const responseMessage = err?.response?.data?.message;
+      if (responseMessage) {
+        setError(responseMessage);
+      } else if (err?.code === 'ERR_NETWORK') {
+        setError('Cannot reach backend API. Ensure backend is running on http://localhost:8080.');
+      } else {
+        setError('Failed to add media');
+      }
     } finally {
       setLoading(false);
     }

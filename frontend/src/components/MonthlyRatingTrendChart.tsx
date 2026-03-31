@@ -1,4 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { UserMedia } from '../types';
 
 interface MonthlyRatingTrendChartProps {
@@ -7,6 +17,7 @@ interface MonthlyRatingTrendChartProps {
 
 interface MonthlyPoint {
   month: number;
+  label: string;
   average: number | null;
   count: number;
 }
@@ -67,51 +78,14 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
       const count = counts[month];
       return {
         month,
+        label: MONTH_LABELS[month],
         average: count > 0 ? sum / count : null,
         count,
       };
     });
   }, [allData, selectedYear]);
 
-  const chartWidth = 620;
-  const chartHeight = 220;
-  const padding = { top: 16, right: 20, bottom: 32, left: 20 };
-  const innerWidth = chartWidth - padding.left - padding.right;
-  const innerHeight = chartHeight - padding.top - padding.bottom;
-
-  const points = monthlyData.map((point) => {
-    const x = padding.left + (point.month / 11) * innerWidth;
-    if (point.average === null) {
-      return { ...point, x, y: null as number | null };
-    }
-
-    const normalized = (point.average - 1) / 9;
-    const y = padding.top + innerHeight - normalized * innerHeight;
-    return { ...point, x, y };
-  });
-
-  const activePoint = points.find((point) => point.month === activeMonth) ?? points[0];
-
-  const linePath = useMemo(() => {
-    let d = '';
-    let started = false;
-
-    for (const point of points) {
-      if (point.y === null) {
-        started = false;
-        continue;
-      }
-
-      if (!started) {
-        d += `M ${point.x.toFixed(2)} ${point.y.toFixed(2)} `;
-        started = true;
-      } else {
-        d += `L ${point.x.toFixed(2)} ${point.y.toFixed(2)} `;
-      }
-    }
-
-    return d.trim();
-  }, [points]);
+  const activePoint = monthlyData.find((point) => point.month === activeMonth) ?? monthlyData[0];
 
   const yearlyAverage = useMemo(() => {
     let sum = 0;
@@ -166,78 +140,37 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-44">
-        {[1, 3, 5, 7, 9].map((tick) => {
-          const normalized = (tick - 1) / 9;
-          const y = padding.top + innerHeight - normalized * innerHeight;
-          return (
-            <line
-              key={tick}
-              x1={padding.left}
-              x2={chartWidth - padding.right}
-              y1={y}
-              y2={y}
-              stroke="currentColor"
-              className="text-gray-200 dark:text-gray-700"
-              strokeWidth="1"
+      <div className="h-44 mb-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis
+              domain={[1, 10]}
+              ticks={[1, 3, 5, 7, 9]}
+              allowDecimals={false}
+              tick={{ fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
             />
-          );
-        })}
-
-        {linePath && (
-          <path
-            d={linePath}
-            fill="none"
-            stroke="url(#ratingTrendGradient)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-
-        {points.map((point) => {
-          if (point.y === null) {
-            return null;
-          }
-          const isActive = point.month === activeMonth;
-          return (
-            <circle
-              key={`point-${point.month}`}
-              cx={point.x}
-              cy={point.y}
-              r={isActive ? 5 : 4}
-              fill="#ffffff"
-              stroke={isActive ? '#06b6d4' : '#2563eb'}
-              strokeWidth="2"
-              className="cursor-pointer transition-all"
-              onMouseEnter={() => setActiveMonth(point.month)}
-              onClick={() => setActiveMonth(point.month)}
+            <Tooltip
+              labelFormatter={(label: string) => `${label} ${selectedYear}`}
             />
-          );
-        })}
-
-        {points.map((point) => (
-          <text
-            key={`label-${point.month}`}
-            x={point.x}
-            y={chartHeight - 10}
-            textAnchor="middle"
-            className={point.month === activeMonth ? 'fill-blue-600 dark:fill-cyan-300' : 'fill-gray-500 dark:fill-gray-400'}
-            fontSize="10"
-            style={{ cursor: 'pointer' }}
-            onClick={() => setActiveMonth(point.month)}
-          >
-            {MONTH_LABELS[point.month]}
-          </text>
-        ))}
-
-        <defs>
-          <linearGradient id="ratingTrendGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#2563eb" />
-            <stop offset="100%" stopColor="#06b6d4" />
-          </linearGradient>
-        </defs>
-      </svg>
+            <ReferenceLine y={yearlyAverage} stroke="#94a3b8" strokeDasharray="4 4" />
+            <ReferenceLine x={MONTH_LABELS[activeMonth]} stroke="#06b6d4" strokeDasharray="2 2" />
+            <Line
+              type="monotone"
+              dataKey="average"
+              stroke="#2563eb"
+              strokeWidth={3}
+              dot={{ r: 4, stroke: '#2563eb', strokeWidth: 2, fill: '#ffffff' }}
+              activeDot={{ r: 6, stroke: '#06b6d4', strokeWidth: 2, fill: '#ffffff' }}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       <div className="mt-3 grid grid-cols-6 gap-1.5">
         {MONTH_LABELS.map((label, month) => (
