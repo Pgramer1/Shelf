@@ -24,25 +24,25 @@ public interface UserMediaRepository extends JpaRepository<UserMedia, Long> {
 
     long countByUserIdAndIsFavoriteTrue(Long userId);
 
-        List<UserMedia> findTop20ByMedia_IdAndRatingIsNotNullOrderByUpdatedAtDesc(Long mediaId);
+    List<UserMedia> findTop20ByMedia_IdAndRatingIsNotNullOrderByUpdatedAtDesc(Long mediaId);
 
-        @Query("""
+    @Query("""
                 select avg(um.rating)
             from UserMedia um
             where um.media.id = :mediaId and um.rating is not null
             """)
-            Double getAverageRatingByMediaId(@Param("mediaId") Long mediaId);
+    Double getAverageRatingByMediaId(@Param("mediaId") Long mediaId);
 
-            long countByMedia_IdAndRatingIsNotNull(Long mediaId);
+    long countByMedia_IdAndRatingIsNotNull(Long mediaId);
 
-        @Query("""
+    @Query("""
             select um.rating, count(um)
             from UserMedia um
             where um.media.id = :mediaId and um.rating is not null
             group by um.rating
             order by um.rating asc
             """)
-        List<Object[]> getRatingDistributionByMediaId(@Param("mediaId") Long mediaId);
+    List<Object[]> getRatingDistributionByMediaId(@Param("mediaId") Long mediaId);
 
     void deleteByUserIdAndMediaId(Long userId, Long mediaId);
 }

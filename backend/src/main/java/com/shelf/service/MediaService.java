@@ -67,55 +67,56 @@ public class MediaService {
                 .collect(Collectors.toList());
     }
 
-        public MediaDetailsResponse getMediaDetails(Long mediaId, String username, RatingScope requestedScope) {
+    public MediaDetailsResponse getMediaDetails(Long mediaId, String username, RatingScope requestedScope) {
         Media media = mediaRepository.findById(mediaId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Media not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Media not found"));
 
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Optional<UserMedia> userMedia = userMediaRepository.findByUserIdAndMediaId(user.getId(), mediaId);
 
-        // FRIENDS scope requires friendship graph and is intentionally downgraded for this
+        // FRIENDS scope requires friendship graph and is intentionally downgraded for
+        // this
         // phase.
         RatingScope appliedScope = RatingScope.GLOBAL;
         String scopeNotice = requestedScope == RatingScope.FRIENDS
-            ? "Friends scope is not available yet; showing global ratings for now."
-            : null;
+                ? "Friends scope is not available yet; showing global ratings for now."
+                : null;
 
         Double averageRating = userMediaRepository.getAverageRatingByMediaId(mediaId);
         Long totalRatings = userMediaRepository.countByMedia_IdAndRatingIsNotNull(mediaId);
 
         List<CommunityRatingBucketResponse> ratingDistribution = userMediaRepository
-            .getRatingDistributionByMediaId(mediaId)
-            .stream()
-            .map(row -> new CommunityRatingBucketResponse(
-                ((Number) row[0]).intValue(),
-                ((Number) row[1]).longValue()))
-            .collect(Collectors.toList());
+                .getRatingDistributionByMediaId(mediaId)
+                .stream()
+                .map(row -> new CommunityRatingBucketResponse(
+                        ((Number) row[0]).intValue(),
+                        ((Number) row[1]).longValue()))
+                .collect(Collectors.toList());
 
         List<CommunityRecentRatingResponse> recentRatings = userMediaRepository
-            .findTop20ByMedia_IdAndRatingIsNotNullOrderByUpdatedAtDesc(mediaId)
-            .stream()
-            .map(entry -> new CommunityRecentRatingResponse(
-                entry.getUser().getUsername(),
-                entry.getRating(),
-                entry.getUpdatedAt()))
-            .collect(Collectors.toList());
+                .findTop20ByMedia_IdAndRatingIsNotNullOrderByUpdatedAtDesc(mediaId)
+                .stream()
+                .map(entry -> new CommunityRecentRatingResponse(
+                        entry.getUser().getUsername(),
+                        entry.getRating(),
+                        entry.getUpdatedAt()))
+                .collect(Collectors.toList());
 
         Integer myRating = userMedia.map(UserMedia::getRating).orElse(null);
 
         return new MediaDetailsResponse(
-            mapToResponse(media),
-            requestedScope,
-            appliedScope,
-            scopeNotice,
-            averageRating,
-            totalRatings,
-            ratingDistribution,
-            recentRatings,
-            myRating);
-        }
+                mapToResponse(media),
+                requestedScope,
+                appliedScope,
+                scopeNotice,
+                averageRating,
+                totalRatings,
+                ratingDistribution,
+                recentRatings,
+                myRating);
+    }
 
     private MediaResponse mapToResponse(Media media) {
         return new MediaResponse(
