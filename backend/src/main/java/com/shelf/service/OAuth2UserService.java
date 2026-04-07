@@ -32,13 +32,18 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> userRepository.findByEmail(email)
                         .map(existingUser -> {
                             existingUser.setGoogleId(googleId);
+                            if (existingUser.getAvatarUrl() == null || existingUser.getAvatarUrl().isBlank()) {
+                                existingUser.setAvatarUrl(defaultAvatarUrl(existingUser.getUsername()));
+                            }
                             return userRepository.save(existingUser);
                         })
                         .orElseGet(() -> {
                             User newUser = new User();
                             newUser.setGoogleId(googleId);
                             newUser.setEmail(email);
-                            newUser.setUsername(generateUsername(name, email));
+                            String username = generateUsername(name, email);
+                            newUser.setUsername(username);
+                            newUser.setAvatarUrl(defaultAvatarUrl(username));
                             return userRepository.save(newUser);
                         }));
 
@@ -55,5 +60,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             username = base + counter++;
         }
         return username;
+    }
+
+    private String defaultAvatarUrl(String seed) {
+        return "https://api.dicebear.com/9.x/croodles/svg?seed=" + seed;
     }
 }

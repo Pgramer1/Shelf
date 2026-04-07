@@ -42,11 +42,19 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);
 
-        String targetUrl = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectUri))
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectUri))
                 .queryParam("token", token)
                 .queryParam("username", user.getUsername())
-                .queryParam("email", user.getEmail())
-                .build().toUriString();
+                .queryParam("email", user.getEmail());
+
+        if (user.getBio() != null) {
+            builder.queryParam("bio", user.getBio());
+        }
+        if (user.getAvatarUrl() != null) {
+            builder.queryParam("avatarUrl", user.getAvatarUrl());
+        }
+
+        String targetUrl = builder.build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

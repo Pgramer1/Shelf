@@ -8,6 +8,8 @@ import Signup from './pages/Signup';
 import Shelf from './pages/Shelf';
 import OAuthCallback from './pages/OAuthCallback';
 import ActivityDayDetails from './pages/ActivityDayDetails';
+import MediaDetailsPage from './pages/MediaDetails';
+import Profile from './pages/Profile';
 
 const OAuthQueryHandler: React.FC = () => {
   const location = useLocation();
@@ -19,10 +21,12 @@ const OAuthQueryHandler: React.FC = () => {
     const token = searchParams.get('token');
     const username = searchParams.get('username');
     const email = searchParams.get('email');
+    const bio = searchParams.get('bio');
+    const avatarUrl = searchParams.get('avatarUrl');
     const oauthError = searchParams.get('oauth_error');
 
     if (token && username && email) {
-      login(token, { username, email });
+      login(token, { username, email, bio, avatarUrl });
       navigate('/', { replace: true });
       return;
     }
@@ -57,6 +61,30 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <ActivityDayDetails />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/media/:mediaId"
+            element={
+              <PrivateRoute>
+                <MediaDetailsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/u/:username"
+            element={
+              <PrivateRoute>
+                <Profile />
               </PrivateRoute>
             }
           />

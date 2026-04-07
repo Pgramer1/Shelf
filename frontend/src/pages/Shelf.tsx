@@ -14,7 +14,9 @@ import {
   SlidersHorizontal,
   Star,
   Sun,
+  User,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MediaCard from '../components/MediaCard';
 import AddMediaModal from '../components/AddMediaModal';
 import ActivityHeatmap from '../components/ActivityHeatmap';
@@ -85,6 +87,7 @@ const getStatusTabs = (type: string): string[] => {
 
 const Shelf: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeType, setActiveType]     = useState<string>('ALL');
   const [activeStatus, setActiveStatus] = useState<string>('ALL');
   const [allData, setAllData]           = useState<UserMedia[]>([]);
@@ -241,6 +244,14 @@ const Shelf: React.FC = () => {
                   >
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">Add Media</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/profile')}
+                    className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">Profile</span>
                   </button>
                   <button
                     type="button"

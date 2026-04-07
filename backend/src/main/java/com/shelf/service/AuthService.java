@@ -41,6 +41,7 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setAvatarUrl(defaultAvatarUrl(request.getUsername()));
 
         userRepository.save(user);
 
@@ -48,7 +49,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);
 
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        return new AuthResponse(token, user.getUsername(), user.getEmail(), user.getBio(), user.getAvatarUrl());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -63,7 +64,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);
 
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        return new AuthResponse(token, user.getUsername(), user.getEmail(), user.getBio(), user.getAvatarUrl());
     }
 
     public String forgotPassword(ForgotPasswordRequest request) {
@@ -71,5 +72,9 @@ public class AuthService {
         // Hook actual reset-token email delivery here when email infrastructure is
         // added.
         return "If an account exists for this email, reset instructions have been sent.(yet to be implemented)";
+    }
+
+    private String defaultAvatarUrl(String seed) {
+        return "https://api.dicebear.com/9.x/croodles/svg?seed=" + seed;
     }
 }

@@ -1,5 +1,5 @@
 import api from './api';
-import { Media, MediaRequest, MediaType } from '../types';
+import { Media, MediaDetails, MediaRequest, MediaType, RatingScope } from '../types';
 
 export const mediaService = {
   async createMedia(data: MediaRequest): Promise<Media> {
@@ -14,6 +14,11 @@ export const mediaService = {
 
   async getMediaById(id: number): Promise<Media> {
     const response = await api.get<Media>(`/media/${id}`);
+    return response.data;
+  },
+
+  async getMediaDetails(id: number, scope: RatingScope = 'GLOBAL'): Promise<MediaDetails> {
+    const response = await api.get<MediaDetails>(`/media/${id}/details?scope=${scope}`);
     return response.data;
   },
 
