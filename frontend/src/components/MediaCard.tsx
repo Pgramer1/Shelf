@@ -92,7 +92,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition group min-w-0">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition min-w-0">
         {/* Image */}
         <div className="relative aspect-[2/3] bg-gray-200 dark:bg-gray-700">
           {userMedia.media.imageUrl ? (
@@ -113,23 +113,6 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
               <Star className="w-4 h-4 text-white fill-white" />
             </div>
           )}
-
-          {/* Actions (show on hover) */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition"
-            >
-              <Pencil className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition disabled:opacity-50"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </div>
         </div>
 
         {/* Content */}
@@ -205,10 +188,31 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
             </div>
           </div>
 
-          {/* Status Badge */}
-          <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
-            {formatStatus(userMedia.status)}
-          </span>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
+              {formatStatus(userMedia.status)}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
+                aria-label="Edit media"
+                title="Edit"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
+                aria-label="Delete media"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

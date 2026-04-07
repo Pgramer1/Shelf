@@ -49,18 +49,37 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'PROGRESS_DESC', label: 'Progress: Most completed' },
 ];
 
+const IN_PROGRESS_FILTER = 'IN_PROGRESS';
+const PLANNED_FILTER = 'PLANNED';
+
+const inProgressStatuses = new Set(['WATCHING', 'READING', 'PLAYING']);
+const plannedStatuses = new Set(['PLAN_TO_WATCH', 'PLAN_TO_READ', 'PLAN_TO_PLAY']);
+
+const matchesStatusFilter = (status: string, filter: string) => {
+  if (filter === 'ALL') return true;
+  if (filter === IN_PROGRESS_FILTER) return inProgressStatuses.has(status);
+  if (filter === PLANNED_FILTER) return plannedStatuses.has(status);
+  return status === filter;
+};
+
 const statusLabel = (s: string) =>
   s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+const statusFilterLabel = (s: string) => {
+  if (s === IN_PROGRESS_FILTER) return 'In Progress';
+  if (s === PLANNED_FILTER) return 'Planned';
+  return statusLabel(s);
+};
 
 const getStatusTabs = (type: string): string[] => {
   const base = ['COMPLETED', 'ON_HOLD', 'DROPPED'];
   switch (type) {
-    case MediaType.BOOK:     return ['READING',  ...base, 'PLAN_TO_READ'];
-    case MediaType.GAME:     return ['PLAYING',  ...base, 'PLAN_TO_PLAY'];
+    case MediaType.BOOK:     return [IN_PROGRESS_FILTER, ...base, PLANNED_FILTER];
+    case MediaType.GAME:     return [IN_PROGRESS_FILTER, ...base, PLANNED_FILTER];
     case MediaType.MOVIE:
     case MediaType.TV_SERIES:
-    case MediaType.ANIME:   return ['WATCHING', ...base, 'PLAN_TO_WATCH'];
-    default:                return ['WATCHING', 'READING', 'PLAYING', ...base, 'PLAN_TO_WATCH', 'PLAN_TO_READ', 'PLAN_TO_PLAY'];
+    case MediaType.ANIME:   return [IN_PROGRESS_FILTER, ...base, PLANNED_FILTER];
+    default:                return [IN_PROGRESS_FILTER, ...base, PLANNED_FILTER];
   }
 };
 
@@ -111,7 +130,7 @@ const Shelf: React.FC = () => {
   const visibleData = useMemo(() => {
     const filtered = allData.filter((item) => {
       const typeMatch = activeType === 'ALL' || item.media.type === activeType;
-      const statusMatch = activeStatus === 'ALL' || item.status === activeStatus;
+      const statusMatch = matchesStatusFilter(item.status, activeStatus);
       return typeMatch && statusMatch;
     });
 
@@ -149,7 +168,7 @@ const Shelf: React.FC = () => {
 
   const countLabel = () => {
     const typePart   = activeType   === 'ALL' ? 'items' : typeLabels[activeType].toLowerCase();
-    const statusPart = activeStatus === 'ALL' ? '' : ` · ${statusLabel(activeStatus)}`;
+    const statusPart = activeStatus === 'ALL' ? '' : ` · ${statusFilterLabel(activeStatus)}`;
     return `${visibleData.length} ${typePart}${statusPart}`;
   };
 
@@ -297,7 +316,7 @@ const Shelf: React.FC = () => {
                       >
                         <option value="ALL">All</option>
                         {statusTabs.map((tab) => (
-                          <option key={tab} value={tab}>{statusLabel(tab)}</option>
+                          <option key={tab} value={tab}>{statusFilterLabel(tab)}</option>
                         ))}
                       </select>
                     </label>

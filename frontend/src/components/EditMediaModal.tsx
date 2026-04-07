@@ -15,6 +15,8 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
   const [rating, setRating] = useState<number | undefined>(userMedia.rating);
   const [notes, setNotes] = useState(userMedia.notes || '');
   const [isFavorite, setIsFavorite] = useState(userMedia.isFavorite);
+  const [startDate, setStartDate] = useState(userMedia.startedAt ? userMedia.startedAt.slice(0, 10) : '');
+  const [endDate, setEndDate] = useState(userMedia.completedAt ? userMedia.completedAt.slice(0, 10) : '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,6 +44,8 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
         rating,
         notes: notes || undefined,
         isFavorite,
+        startedAt: startDate ? `${startDate}T00:00:00` : undefined,
+        completedAt: endDate ? `${endDate}T00:00:00` : undefined,
         activityAt: localDateTimeNow(),
       });
       onSuccess();
@@ -102,7 +106,17 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
             </label>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as Status)}
+              onChange={(e) => {
+                const nextStatus = e.target.value as Status;
+                setStatus(nextStatus);
+                if (nextStatus === Status.COMPLETED && !endDate) {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  setEndDate(`${year}-${month}-${day}`);
+                }
+              }}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             >
               {getStatusOptions().map((s) => (
@@ -137,6 +151,31 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Max: {userMedia.media.totalUnits}
             </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
           </div>
 
           <div>
