@@ -33,6 +33,12 @@ public class User {
     @Column(unique = true)
     private String googleId;
 
+    @Column(length = 1000)
+    private String bio;
+
+    @Column(length = 512)
+    private String avatarUrl;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

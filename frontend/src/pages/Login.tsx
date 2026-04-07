@@ -48,7 +48,12 @@ const Login: React.FC = () => {
 
     try {
       const response = await authService.login({ username, password });
-      login(response.token, { username: response.username, email: response.email });
+      login(response.token, {
+        username: response.username,
+        email: response.email,
+        bio: response.bio,
+        avatarUrl: response.avatarUrl,
+      });
       navigate('/');
     } catch (err: any) {
       setError(extractErrorMessage(err));

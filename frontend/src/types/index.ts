@@ -29,6 +29,31 @@ export interface Media {
   releaseYear?: number;
 }
 
+export type RatingScope = 'GLOBAL' | 'FRIENDS';
+
+export interface CommunityRatingBucket {
+  rating: number;
+  count: number;
+}
+
+export interface CommunityRecentRating {
+  username: string;
+  rating: number;
+  updatedAt: string;
+}
+
+export interface MediaDetails {
+  media: Media;
+  requestedScope: RatingScope;
+  appliedScope: RatingScope;
+  scopeNotice?: string | null;
+  averageRating: number | null;
+  totalRatings: number;
+  ratingDistribution: CommunityRatingBucket[];
+  recentRatings: CommunityRecentRating[];
+  myRating: number | null;
+}
+
 export interface UserMedia {
   id: number;
   media: Media;
@@ -43,14 +68,67 @@ export interface UserMedia {
 }
 
 export interface User {
+  id?: number;
   username: string;
   email: string;
+  bio?: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface AuthResponse {
   token: string;
   username: string;
   email: string;
+  bio?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface UpdateProfileRequest {
+  username?: string;
+  bio?: string;
+  avatarUrl?: string;
+}
+
+export interface UpdateProfileResponse {
+  token: string;
+  profile: UserProfile;
+}
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  email?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  createdAt: string;
+  totalItems: number;
+  completedItems: number;
+  favoriteItems: number;
+  friendsCount: number;
+  me: boolean;
+}
+
+export interface UserSummary {
+  id: number;
+  username: string;
+  email: string;
+  bio?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface UserSearchResult {
+  user: UserSummary;
+  relationship: 'SELF' | 'NONE' | 'FRIEND' | 'PENDING_OUTGOING' | 'PENDING_INCOMING' | 'BLOCKED';
+}
+
+export interface FriendRequest {
+  requestId: number;
+  user: UserSummary;
+  createdAt: string;
+}
+
+export interface SendFriendRequestPayload {
+  identifier: string;
 }
 
 export interface LoginRequest {

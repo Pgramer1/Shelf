@@ -3,6 +3,7 @@ import { UserMedia, Status, MediaType } from '../types';
 import { shelfService } from '../services/shelfService';
 import { Pencil, Trash2, Star, Minus, Plus } from 'lucide-react';
 import EditMediaModal from './EditMediaModal';
+import { useNavigate } from 'react-router-dom';
 
 interface MediaCardProps {
   userMedia: UserMedia;
@@ -11,6 +12,7 @@ interface MediaCardProps {
 }
 
 const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) => {
+  const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localProgress, setLocalProgress] = useState(userMedia.progress);
@@ -90,9 +92,24 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
     }
   };
 
+  const openDetails = () => {
+    navigate(`/media/${userMedia.media.id}`);
+  };
+
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition min-w-0">
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition min-w-0 cursor-pointer"
+        onClick={openDetails}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openDetails();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         {/* Image */}
         <div className="relative aspect-[2/3] bg-gray-200 dark:bg-gray-700">
           {userMedia.media.imageUrl ? (
@@ -132,7 +149,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
           </div>
 
           {/* Progress Bar + Incrementor */}
-          <div className="mb-2">
+          <div className="mb-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Progress</span>
               <div className="flex items-center gap-1 min-w-0">
@@ -188,7 +205,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="mt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
             <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
               {formatStatus(userMedia.status)}
             </span>

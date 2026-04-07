@@ -36,7 +36,12 @@ const Signup: React.FC = () => {
 
     try {
       const response = await authService.signup({ username, email, password });
-      login(response.token, { username: response.username, email: response.email });
+      login(response.token, {
+        username: response.username,
+        email: response.email,
+        bio: response.bio,
+        avatarUrl: response.avatarUrl,
+      });
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
