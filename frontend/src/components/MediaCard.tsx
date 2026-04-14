@@ -205,28 +205,28 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
             </div>
           </div>
 
-          <div className="mt-auto pt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
+          <div className="mt-auto pt-3 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <span className={`inline-block max-w-full truncate px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
               {formatStatus(userMedia.status)}
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
+                className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
                 aria-label="Edit media"
                 title="Edit"
               >
-                <Pencil className="w-4 h-4" />
+                <Pencil className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
+                className="inline-flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
                 aria-label="Delete media"
                 title="Delete"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
