@@ -99,7 +99,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
   return (
     <>
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition min-w-0 cursor-pointer"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition min-w-0 cursor-pointer h-full flex flex-col"
         onClick={openDetails}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -133,12 +133,12 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
         </div>
 
         {/* Content */}
-        <div className="p-3 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 break-words">
+        <div className="p-3 min-w-0 flex flex-col flex-1">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2 min-h-[2.5rem]" title={userMedia.media.title}>
             {userMedia.media.title}
           </h3>
           
-          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-2">
+          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-2 min-h-[1rem]">
             <span className="truncate mr-2">{userMedia.media.type.replace('_', ' ')}</span>
             {userMedia.rating && (
               <span className="flex items-center gap-1 whitespace-nowrap">
@@ -205,7 +205,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-auto pt-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
             <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusBadgeClass()}`}>
               {formatStatus(userMedia.status)}
             </span>

@@ -607,17 +607,17 @@ const Profile: React.FC = () => {
                 Friends
               </h2>
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Find by username or email"
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                  className="col-span-2 sm:col-span-1 min-w-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
                 />
                 <button
                   type="button"
                   onClick={handleSearchUsers}
-                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 inline-flex items-center gap-1"
+                  className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 inline-flex items-center justify-center gap-1 whitespace-nowrap"
                 >
                   <Search className="w-4 h-4" />
                   Search
@@ -626,7 +626,7 @@ const Profile: React.FC = () => {
                   type="button"
                   disabled={savingFriendAction || !searchQuery.trim()}
                   onClick={() => handleSendRequest(searchQuery.trim())}
-                  className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center gap-1 disabled:opacity-60"
+                  className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm inline-flex items-center justify-center gap-1 whitespace-nowrap disabled:opacity-60"
                 >
                   <UserPlus className="w-4 h-4" />
                   Add
