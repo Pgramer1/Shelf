@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shelf Auto Sync</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="panel">
+    <header class="top">
+      <h1>Shelf Auto Sync</h1>
+      <button id="open-options" class="ghost">Options</button>
+    </header>
+
+    <section class="card" id="auth-card">
+      <p class="label">Account</p>
+      <p id="auth-status">Checking sign-in...</p>
+      <div class="actions">
+        <button id="sign-in" class="primary">Sign in with Google</button>
+        <button id="sign-out" class="ghost">Sign out</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="label">Latest Detection</p>
+      <div id="last-detection" class="muted">No activity detected yet.</div>
+      <div class="actions">
+        <button id="add-latest" class="primary">Add Latest To Pending</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="label">Pending Confirmations</p>
+      <ul id="pending-list" class="list"></ul>
+      <p id="pending-empty" class="muted">No pending titles.</p>
+    </section>
+
+    <section class="card" id="sync-errors-card">
+      <p class="label">Sync Diagnostics</p>
+      <p id="sync-error" class="muted">No sync errors.</p>
+    </section>
+
+    <p id="flash" class="flash" aria-live="polite"></p>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

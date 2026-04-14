@@ -32,6 +32,18 @@ A full-stack web application for tracking your movies, TV series, anime, games, 
 - ✏️ Edit and delete media
 - 🎨 Beautiful MAL-inspired UI with dark mode support
 
+## Browser Extension (Early Implementation)
+
+- Location: `browser-extension/`
+- Tracks playback activity from supported legal/public platforms (Netflix, Amazon Prime Video, YouTube)
+- Uses hybrid sync:
+    - First detection asks user to confirm "Add to Shelf"
+    - Existing shelf entries auto-update progress
+- Uses backend Google OAuth with extension callback allowlist
+- Explicitly excludes piracy-site support
+
+See `browser-extension/README.md` for setup.
+
 ## Prerequisites
 
 - Java 21 or higher

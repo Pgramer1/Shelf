@@ -59,8 +59,10 @@ server:
 app:
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/oauth/callback}
+    allowed-redirect-uri-patterns: ${OAUTH2_ALLOWED_REDIRECT_URI_PATTERNS:http://localhost:3000/oauth/callback}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:}
 
 management:
   endpoints:

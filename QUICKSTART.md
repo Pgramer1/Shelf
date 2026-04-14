@@ -57,6 +57,20 @@ Go to: http://localhost:3000
 
 Create an account and start adding media!
 
+### Step 7 (Optional): Load Browser Extension
+
+1. Add extension-friendly backend env values in `backend/.env.local`:
+
+```env
+OAUTH2_ALLOWED_REDIRECT_URI_PATTERNS=http://localhost:3000/oauth/callback,chrome-extension://*/callback/index.html,edge-extension://*/callback/index.html
+CORS_ALLOWED_ORIGIN_PATTERNS=chrome-extension://*,edge-extension://*
+```
+
+2. Restart backend after env updates.
+3. Open `chrome://extensions`, enable Developer mode, click Load unpacked.
+4. Select `browser-extension/`.
+5. Open the extension popup and click Sign in with Google.
+
 ---
 
 ## 🐛 Troubleshooting
