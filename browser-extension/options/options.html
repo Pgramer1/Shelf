@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shelf Auto Sync Options</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="page">
+    <h1>Shelf Auto Sync Settings</h1>
+
+    <section class="card">
+      <label>
+        Backend API base URL
+        <input id="api-base-url" type="url" placeholder="http://localhost:8080/api" />
+      </label>
+
+      <label class="row-inline">
+        <input id="sync-enabled" type="checkbox" />
+        Enable automatic syncing
+      </label>
+
+      <label>
+        Minimum update delta (%)
+        <input id="min-percent-delta" type="number" min="1" max="100" />
+      </label>
+
+      <label class="row-inline">
+        <input id="auto-create-media" type="checkbox" />
+        Auto-create media if not found
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Providers</h2>
+      <label class="row-inline"><input id="provider-netflix" type="checkbox" /> Netflix</label>
+      <label class="row-inline"><input id="provider-prime" type="checkbox" /> Amazon Prime Video</label>
+      <label class="row-inline"><input id="provider-youtube" type="checkbox" /> YouTube</label>
+      <label class="row-inline"><input id="provider-generic" type="checkbox" /> Generic OTT (custom domains)</label>
+
+      <label>
+        Custom domains (comma separated)
+        <textarea id="custom-domains" rows="4" placeholder="example-ott.com, another-domain.tv"></textarea>
+      </label>
+      <p>Saving custom domains prompts for host permission so the extension can run on those sites.</p>
+    </section>
+
+    <div class="actions">
+      <button id="save" class="primary">Save</button>
+      <span id="status"></span>
+    </div>
+  </main>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

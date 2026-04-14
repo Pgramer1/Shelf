@@ -1,7 +1,14 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
 import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  CollectionSortOption,
+  setActiveStatus as setActiveStatusFilter,
+  setActiveType as setActiveTypeFilter,
+  setSortBy as setSortByFilter,
+} from '../store/collectionFiltersSlice';
 import {
   BarChart3,
   ChevronDown,
@@ -11,10 +18,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  Search,
   SlidersHorizontal,
   Star,
   Sun,
   User,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MediaCard from '../components/MediaCard';
@@ -34,15 +43,7 @@ const typeLabels: Record<string, string> = {
   [MediaType.GAME]: 'Games',
 };
 
-type SortOption =
-  | 'UPDATED_DESC'
-  | 'UPDATED_ASC'
-  | 'RATING_DESC'
-  | 'RATING_ASC'
-  | 'TITLE_ASC'
-  | 'PROGRESS_DESC';
-
-const sortOptions: { value: SortOption; label: string }[] = [
+const sortOptions: { value: CollectionSortOption; label: string }[] = [
   { value: 'UPDATED_DESC', label: 'Date: Recent first' },
   { value: 'UPDATED_ASC', label: 'Date: Oldest first' },
   { value: 'RATING_DESC', label: 'Rating: High to low' },
@@ -73,6 +74,8 @@ const statusFilterLabel = (s: string) => {
   return statusLabel(s);
 };
 
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
 const getStatusTabs = (type: string): string[] => {
   const base = ['COMPLETED', 'ON_HOLD', 'DROPPED'];
   switch (type) {
@@ -88,17 +91,20 @@ const getStatusTabs = (type: string): string[] => {
 const Shelf: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeType, setActiveType]     = useState<string>('ALL');
-  const [activeStatus, setActiveStatus] = useState<string>('ALL');
+  const dispatch = useAppDispatch();
+  const { activeType, activeStatus, sortBy } = useAppSelector((state) => state.collectionFilters);
   const [allData, setAllData]           = useState<UserMedia[]>([]);
   const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
   const [loading, setLoading]           = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('UPDATED_DESC');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState<'collection' | 'insights'>('collection');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { loadShelfData(); }, []);
 
@@ -113,6 +119,64 @@ const Shelf: React.FC = () => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+        setActiveSuggestionIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
+
+  const filteredByFacet = useMemo(() => {
+    return allData.filter((item) => {
+      const typeMatch = activeType === 'ALL' || item.media.type === activeType;
+      const statusMatch = matchesStatusFilter(item.status, activeStatus);
+      return typeMatch && statusMatch;
+    });
+  }, [allData, activeType, activeStatus]);
+
+  const suggestionItems = useMemo(() => {
+    const query = normalizeText(searchQuery);
+    if (!query) return [] as UserMedia[];
+
+    const ranked = filteredByFacet
+      .map((item) => {
+        const title = item.media.title || '';
+        const normalizedTitle = normalizeText(title);
+        if (!normalizedTitle.includes(query)) {
+          return null;
+        }
+
+        const startsWith = normalizedTitle.startsWith(query);
+        return {
+          item,
+          score: startsWith ? 2 : 1,
+          updatedAt: new Date(item.updatedAt).getTime(),
+        };
+      })
+      .filter((value): value is { item: UserMedia; score: number; updatedAt: number } => value !== null)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.updatedAt - a.updatedAt;
+      });
+
+    const seen = new Set<string>();
+    const unique = ranked
+      .map((entry) => entry.item)
+      .filter((item) => {
+        const key = normalizeText(item.media.title || '');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+    return unique.slice(0, 6);
+  }, [filteredByFacet, searchQuery]);
 
   const loadShelfData = async () => {
     setLoading(true);
@@ -131,10 +195,20 @@ const Shelf: React.FC = () => {
   };
 
   const visibleData = useMemo(() => {
-    const filtered = allData.filter((item) => {
-      const typeMatch = activeType === 'ALL' || item.media.type === activeType;
-      const statusMatch = matchesStatusFilter(item.status, activeStatus);
-      return typeMatch && statusMatch;
+    const query = normalizeText(searchQuery);
+    const tokens = query.length > 0 ? query.split(/\s+/).filter(Boolean) : [];
+    const filtered = filteredByFacet.filter((item) => {
+      if (tokens.length === 0) return true;
+
+      const haystack = normalizeText([
+        item.media.title,
+        item.media.type,
+        item.status,
+        item.notes || '',
+        item.media.releaseYear ? String(item.media.releaseYear) : '',
+      ].join(' '));
+
+      return tokens.every((token) => haystack.includes(token));
     });
 
     const sorted = [...filtered].sort((a, b) => {
@@ -150,11 +224,54 @@ const Shelf: React.FC = () => {
     });
 
     return sorted;
-  }, [allData, activeType, activeStatus, sortBy]);
+  }, [filteredByFacet, searchQuery, sortBy]);
+
+  const commitSuggestion = (item: UserMedia) => {
+    setSearchQuery(item.media.title);
+    setIsSearchFocused(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleSearchKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (suggestionItems.length === 0) return;
+      setActiveSuggestionIndex((prev) => (prev + 1) % suggestionItems.length);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (suggestionItems.length === 0) return;
+      setActiveSuggestionIndex((prev) => (prev <= 0 ? suggestionItems.length - 1 : prev - 1));
+      return;
+    }
+
+    if (event.key === 'Tab') {
+      if (suggestionItems.length > 0 && searchQuery.trim()) {
+        event.preventDefault();
+        const picked = suggestionItems[Math.max(activeSuggestionIndex, 0)];
+        commitSuggestion(picked);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      if (activeSuggestionIndex >= 0 && suggestionItems[activeSuggestionIndex]) {
+        event.preventDefault();
+        commitSuggestion(suggestionItems[activeSuggestionIndex]);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setIsSearchFocused(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
 
   const handleTypeChange = (type: string) => {
-    setActiveType(type);
-    setActiveStatus('ALL');
+    dispatch(setActiveTypeFilter(type));
   };
 
   const handleDelete = async (id: number) => {
@@ -172,7 +289,8 @@ const Shelf: React.FC = () => {
   const countLabel = () => {
     const typePart   = activeType   === 'ALL' ? 'items' : typeLabels[activeType].toLowerCase();
     const statusPart = activeStatus === 'ALL' ? '' : ` · ${statusFilterLabel(activeStatus)}`;
-    return `${visibleData.length} ${typePart}${statusPart}`;
+    const searchPart = searchQuery.trim() ? ` · Search: "${searchQuery.trim()}"` : '';
+    return `${visibleData.length} ${typePart}${statusPart}${searchPart}`;
   };
 
   return (
@@ -298,8 +416,62 @@ const Shelf: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className={`${showMobileFilters ? 'grid' : 'hidden'} md:grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-100 dark:border-gray-700 pt-3`}>
-                    <label className="min-w-0">
+                  <div className={`${showMobileFilters ? 'grid' : 'hidden'} md:grid grid-cols-1 md:grid-cols-12 gap-3 border-t border-gray-100 dark:border-gray-700 pt-3`}>
+                    <div className="min-w-0 md:col-span-12" ref={searchBoxRef}>
+                      <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Search Collection</span>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setIsSearchFocused(true);
+                            setActiveSuggestionIndex(-1);
+                          }}
+                          onFocus={() => setIsSearchFocused(true)}
+                          onKeyDown={handleSearchKeyDown}
+                          placeholder="Search title, status, notes, year..."
+                          className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 pl-10 pr-10 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Search your shelf"
+                        />
+                        {searchQuery.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setActiveSuggestionIndex(-1);
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500"
+                            aria-label="Clear search"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {isSearchFocused && searchQuery.trim() && suggestionItems.length > 0 && (
+                          <div className="absolute z-30 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+                            {suggestionItems.map((suggestion, index) => (
+                              <button
+                                key={`${suggestion.id}-${suggestion.media.title}`}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => commitSuggestion(suggestion)}
+                                className={`w-full px-3 py-2 text-left text-sm transition ${index === activeSuggestionIndex
+                                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                              >
+                                <span className="font-medium">{suggestion.media.title}</span>
+                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                  {typeLabels[suggestion.media.type]} · {statusFilterLabel(suggestion.status)}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <label className="min-w-0 md:col-span-4">
                       <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Type</span>
                       <select
                         value={activeType}
@@ -315,12 +487,12 @@ const Shelf: React.FC = () => {
                       </select>
                     </label>
 
-                    <label className="min-w-0">
+                    <label className="min-w-0 md:col-span-4">
                       <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</span>
                       <select
                         value={activeStatus}
                         onChange={(e) => {
-                          setActiveStatus(e.target.value);
+                          dispatch(setActiveStatusFilter(e.target.value));
                           setShowMobileFilters(false);
                         }}
                         className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -332,14 +504,14 @@ const Shelf: React.FC = () => {
                       </select>
                     </label>
 
-                    <label className="min-w-0">
+                    <label className="min-w-0 md:col-span-4">
                       <span className="mb-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
                         <SlidersHorizontal className="w-3 h-3" /> Sort By
                       </span>
                       <select
                         value={sortBy}
                         onChange={(e) => {
-                          setSortBy(e.target.value as SortOption);
+                          dispatch(setSortByFilter(e.target.value as CollectionSortOption));
                           setShowMobileFilters(false);
                         }}
                         className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg h-10 px-3 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"

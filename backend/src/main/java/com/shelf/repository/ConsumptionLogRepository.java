@@ -11,4 +11,6 @@ import java.util.List;
 public interface ConsumptionLogRepository extends JpaRepository<ConsumptionLog, Long> {
     List<ConsumptionLog> findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(Long userId, LocalDateTime start,
             LocalDateTime end);
+
+    long deleteByUserMedia_Id(Long userMediaId);
 }

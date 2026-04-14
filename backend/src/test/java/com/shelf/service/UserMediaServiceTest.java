@@ -24,6 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -159,6 +160,22 @@ class UserMediaServiceTest {
         userMediaService.updateMedia("alice", 201L, request);
 
         verify(consumptionLogRepository, never()).save(any(ConsumptionLog.class));
+    }
+
+    @Test
+    void deleteFromShelf_deletesDependentConsumptionLogsFirst() {
+        User user = buildUser(1L, "alice");
+        Media media = buildMedia(14L, "Dark", MediaType.TV_SERIES, 26);
+        UserMedia existing = buildUserMedia(202L, user, media, Status.WATCHING, 5);
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(userMediaRepository.findById(202L)).thenReturn(Optional.of(existing));
+
+        userMediaService.deleteFromShelf("alice", 202L);
+
+        var ordered = inOrder(consumptionLogRepository, userMediaRepository);
+        ordered.verify(consumptionLogRepository).deleteByUserMedia_Id(202L);
+        ordered.verify(userMediaRepository).delete(existing);
     }
 
     private static User buildUser(Long id, String username) {

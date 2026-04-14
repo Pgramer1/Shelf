@@ -4,6 +4,8 @@ import com.shelf.dto.AuthResponse;
 import com.shelf.dto.ForgotPasswordRequest;
 import com.shelf.dto.LoginRequest;
 import com.shelf.dto.SignupRequest;
+import com.shelf.security.OAuth2RedirectTargetCookieRepository;
+import com.shelf.security.OAuth2RedirectTargetValidator;
 import com.shelf.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuth2RedirectTargetValidator redirectTargetValidator;
+    private final OAuth2RedirectTargetCookieRepository redirectTargetCookieRepository;
 
     @Autowired(required = false)
     private ClientRegistrationRepository clientRegistrationRepository;
@@ -45,6 +49,10 @@ public class AuthController {
         return oauth2RedirectUri;
     }
 
+    private boolean isFrontendCallback(String uri) {
+        return uri != null && (uri.endsWith("/oauth/callback") || uri.endsWith("/oauth/callback/"));
+    }
+
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
         return ResponseEntity.ok(authService.signup(request));
@@ -62,15 +70,38 @@ public class AuthController {
     }
 
     @GetMapping("/oauth2/google")
-    public void startGoogleOAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void startGoogleOAuth(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @RequestParam(name = "redirect_uri", required = false) String requestedRedirectUri) throws IOException {
+        String redirectTarget = oauth2RedirectUri;
+        if (requestedRedirectUri != null && !requestedRedirectUri.isBlank()) {
+            if (!redirectTargetValidator.isAllowed(requestedRedirectUri)) {
+                String loginUrl = UriComponentsBuilder
+                        .fromUriString(frontendRoot() + "/login")
+                        .queryParam("oauth_error", "Invalid redirect_uri")
+                        .build()
+                        .toUriString();
+                response.sendRedirect(loginUrl);
+                return;
+            }
+            redirectTarget = requestedRedirectUri;
+        }
+
         if (clientRegistrationRepository != null) {
+            redirectTargetCookieRepository.saveRedirectTarget(response,
+                    redirectTargetValidator.resolveOrDefault(redirectTarget));
             String oauthStart = request.getContextPath() + "/oauth2/authorization/google";
             response.sendRedirect(oauthStart);
             return;
         }
 
+        String failureTarget = isFrontendCallback(redirectTarget)
+                ? frontendRoot() + "/login"
+                : redirectTargetValidator.resolveOrDefault(redirectTarget);
+
         String loginUrl = UriComponentsBuilder
-                .fromUriString(frontendRoot() + "/login")
+                .fromUriString(failureTarget)
                 .queryParam("oauth_error", "Google login is not configured on the server")
                 .build()
                 .toUriString();

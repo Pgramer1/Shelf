@@ -4,7 +4,6 @@ import com.shelf.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -20,9 +19,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
-
-    @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth/callback}")
-    private String redirectUri;
+    private final OAuth2RedirectTargetValidator redirectTargetValidator;
+    private final OAuth2RedirectTargetCookieRepository redirectTargetCookieRepository;
 
     private String normalizeRedirectUri(String uri) {
         if (uri != null && uri.endsWith("/oauth/callback")) {
@@ -42,7 +40,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String token = jwtTokenProvider.generateToken(userDetails);
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectUri))
+        String redirectTarget = redirectTargetCookieRepository.loadRedirectTarget(request)
+                .map(redirectTargetValidator::resolveOrDefault)
+                .orElse(redirectTargetValidator.getDefaultRedirectUri());
+        redirectTargetCookieRepository.clearRedirectTarget(response);
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectTarget))
                 .queryParam("token", token)
                 .queryParam("username", user.getUsername())
                 .queryParam("email", user.getEmail());

@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Shelf Auto Sync",
+  "version": "0.1.0",
+  "description": "Sync your Shelf progress from supported OTT playback activity.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8080/*",
+    "https://shelf-backend.up.railway.app/*",
+    "https://api.jikan.moe/*",
+    "https://*.netflix.com/*",
+    "https://*.primevideo.com/*",
+    "https://*.amazon.com/*",
+    "https://*.youtube.com/*",
+    "https://*.youtu.be/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Shelf Auto Sync",
+    "default_popup": "popup/popup.html"
+  },
+  "options_page": "options/options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.netflix.com/*",
+        "https://*.primevideo.com/*",
+        "https://*.amazon.com/*",
+        "https://*.youtube.com/*",
+        "https://*.youtu.be/*"
+      ],
+      "js": [
+        "src/content-script.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
