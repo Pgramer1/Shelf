@@ -10,9 +10,17 @@ import {
   setSortBy as setSortByFilter,
 } from '../store/collectionFiltersSlice';
 import {
+  setShelfActiveSection,
+  setShelfDesktopCollectionViewMode,
+  setShelfMobileCollectionViewMode,
+  setShelfSearchQuery,
+  setShelfSidebarOpen,
+} from '../store/shelfUiSlice';
+import {
   BarChart3,
   ChevronDown,
   LayoutGrid,
+  List,
   LogOut,
   Moon,
   PanelLeftClose,
@@ -33,6 +41,7 @@ import RatingDistributionChart from '../components/RatingDistributionChart';
 import FavoritesBreakdownChart from '../components/FavoritesBreakdownChart';
 import MonthlyRatingTrendChart from '../components/MonthlyRatingTrendChart';
 import CompletionFunnelChart from '../components/CompletionFunnelChart';
+import MediaListRow from '../components/MediaListRow';
 
 const typeLabels: Record<string, string> = {
   ALL: 'All',
@@ -93,6 +102,13 @@ const Shelf: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { activeType, activeStatus, sortBy } = useAppSelector((state) => state.collectionFilters);
+  const {
+    activeSection,
+    searchQuery,
+    isSidebarOpen,
+    mobileCollectionViewMode,
+    desktopCollectionViewMode,
+  } = useAppSelector((state) => state.shelfUi);
   const [allData, setAllData]           = useState<UserMedia[]>([]);
   const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -101,9 +117,6 @@ const Shelf: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeSection, setActiveSection] = useState<'collection' | 'insights'>('collection');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const searchBoxRef = useRef<HTMLDivElement | null>(null);
@@ -256,7 +269,7 @@ const Shelf: React.FC = () => {
   }, [filteredByFacet, searchQuery, sortBy]);
 
   const commitSuggestion = (item: UserMedia) => {
-    setSearchQuery(item.media.title);
+    dispatch(setShelfSearchQuery(item.media.title));
     setIsSearchFocused(false);
     setActiveSuggestionIndex(-1);
   };
@@ -331,7 +344,7 @@ const Shelf: React.FC = () => {
           <div className="sticky top-0 h-screen p-3 flex flex-col">
             <button
               type="button"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              onClick={() => dispatch(setShelfSidebarOpen(!isSidebarOpen))}
               className="mb-4 inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition"
               aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
@@ -341,7 +354,7 @@ const Shelf: React.FC = () => {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => setActiveSection('collection')}
+                onClick={() => dispatch(setShelfActiveSection('collection'))}
                 className={`w-full inline-flex items-center ${isSidebarOpen ? 'justify-start px-3' : 'justify-center'} h-11 rounded-lg text-sm font-medium transition ${activeSection === 'collection'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
@@ -352,7 +365,7 @@ const Shelf: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setActiveSection('insights')}
+                onClick={() => dispatch(setShelfActiveSection('insights'))}
                 className={`w-full inline-flex items-center ${isSidebarOpen ? 'justify-start px-3' : 'justify-center'} h-11 rounded-lg text-sm font-medium transition ${activeSection === 'insights'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
@@ -364,7 +377,7 @@ const Shelf: React.FC = () => {
           </div>
         </aside>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pb-20 sm:pb-0">
           {/* Header */}
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
@@ -395,7 +408,7 @@ const Shelf: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/profile')}
-                    className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                    className="hidden sm:inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
                   >
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">Profile</span>
@@ -409,27 +422,6 @@ const Shelf: React.FC = () => {
                     <span className="hidden sm:inline">Logout</span>
                   </button>
                 </div>
-              </div>
-
-              <div className="sm:hidden grid grid-cols-2 gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveSection('collection')}
-                  className={`h-10 rounded-lg text-sm font-medium transition ${activeSection === 'collection'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
-                >
-                  Your Collection
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSection('insights')}
-                  className={`h-10 rounded-lg text-sm font-medium transition ${activeSection === 'insights'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
-                >
-                  Insights
-                </button>
               </div>
 
               {activeSection === 'collection' && (
@@ -453,7 +445,7 @@ const Shelf: React.FC = () => {
                         <input
                           value={searchQuery}
                           onChange={(e) => {
-                            setSearchQuery(e.target.value);
+                            dispatch(setShelfSearchQuery(e.target.value));
                             setIsSearchFocused(true);
                             setActiveSuggestionIndex(-1);
                           }}
@@ -467,7 +459,7 @@ const Shelf: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              setSearchQuery('');
+                              dispatch(setShelfSearchQuery(''));
                               setActiveSuggestionIndex(-1);
                             }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500"
@@ -550,6 +542,86 @@ const Shelf: React.FC = () => {
                         ))}
                       </select>
                     </label>
+
+                    <div className="min-w-0 md:hidden">
+                      <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">View</span>
+                      <div className="grid grid-cols-3 gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-1">
+                        <button
+                          type="button"
+                          onClick={() => dispatch(setShelfMobileCollectionViewMode('single'))}
+                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'single'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                          aria-pressed={mobileCollectionViewMode === 'single'}
+                          aria-label="One at a time view"
+                          title="One at a time"
+                        >
+                          <span className="sr-only">One at a time</span>
+                          <span className="mx-auto inline-flex h-5 w-4 items-center justify-center rounded-sm border-2 border-current" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(setShelfMobileCollectionViewMode('double'))}
+                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'double'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                          aria-pressed={mobileCollectionViewMode === 'double'}
+                          aria-label="Two at a time view"
+                          title="Two at a time"
+                        >
+                          <span className="sr-only">Two at a time</span>
+                          <span className="mx-auto grid h-5 w-6 grid-cols-2 gap-1">
+                            <span className="rounded-sm border-2 border-current" />
+                            <span className="rounded-sm border-2 border-current" />
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(setShelfMobileCollectionViewMode('list'))}
+                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'list'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                          aria-pressed={mobileCollectionViewMode === 'list'}
+                          aria-label="List view"
+                          title="List"
+                        >
+                          <span className="sr-only">List</span>
+                          <List className="mx-auto h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 hidden md:block md:col-span-12">
+                      <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">View</span>
+                      <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-1 max-w-xs">
+                        <button
+                          type="button"
+                          onClick={() => dispatch(setShelfDesktopCollectionViewMode('cards'))}
+                          className={`h-9 rounded-md text-sm font-medium transition ${desktopCollectionViewMode === 'cards'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                          aria-pressed={desktopCollectionViewMode === 'cards'}
+                          aria-label="Cards view"
+                          title="Cards"
+                        >
+                          <span className="sr-only">Cards</span>
+                          <LayoutGrid className="mx-auto h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(setShelfDesktopCollectionViewMode('list'))}
+                          className={`h-9 rounded-md text-sm font-medium transition ${desktopCollectionViewMode === 'list'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                          aria-pressed={desktopCollectionViewMode === 'list'}
+                          aria-label="List view"
+                          title="List"
+                        >
+                          <span className="sr-only">List</span>
+                          <List className="mx-auto h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -622,16 +694,60 @@ const Shelf: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    {visibleData.map((item) => (
-                      <MediaCard
-                        key={item.id}
-                        userMedia={item}
-                        onDelete={handleDelete}
-                        onUpdate={loadShelfData}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="md:hidden">
+                      {mobileCollectionViewMode === 'list' ? (
+                        <div className="space-y-3">
+                          {visibleData.map((item) => (
+                            <MediaListRow
+                              key={item.id}
+                              userMedia={item}
+                              onDelete={handleDelete}
+                              onUpdate={loadShelfData}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className={`grid ${mobileCollectionViewMode === 'single' ? 'grid-cols-1 gap-6' : 'grid-cols-2 gap-4 sm:gap-5'}`}>
+                          {visibleData.map((item) => (
+                            <div key={item.id} className={mobileCollectionViewMode === 'single' ? 'max-w-md w-full mx-auto' : ''}>
+                              <MediaCard
+                                userMedia={item}
+                                onDelete={handleDelete}
+                                onUpdate={loadShelfData}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="hidden md:block">
+                      {desktopCollectionViewMode === 'list' ? (
+                        <div className="space-y-3">
+                          {visibleData.map((item) => (
+                            <MediaListRow
+                              key={item.id}
+                              userMedia={item}
+                              onDelete={handleDelete}
+                              onUpdate={loadShelfData}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                          {visibleData.map((item) => (
+                            <MediaCard
+                              key={item.id}
+                              userMedia={item}
+                              onDelete={handleDelete}
+                              onUpdate={loadShelfData}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </main>
             </>
@@ -645,6 +761,44 @@ const Shelf: React.FC = () => {
           onSuccess={() => { setIsAddModalOpen(false); loadShelfData(); }}
         />
       )}
+
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-2 grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => dispatch(setShelfActiveSection('collection'))}
+            className={`h-11 rounded-lg inline-flex items-center justify-center transition ${activeSection === 'collection'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            aria-label="Open collection"
+            title="Collection"
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => dispatch(setShelfActiveSection('insights'))}
+            className={`h-11 rounded-lg inline-flex items-center justify-center transition ${activeSection === 'insights'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            aria-label="Open insights"
+            title="Insights"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="h-11 rounded-lg inline-flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            aria-label="Open profile"
+            title="Profile"
+          >
+            <User className="w-5 h-5" />
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };
