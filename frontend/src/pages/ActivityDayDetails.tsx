@@ -49,6 +49,8 @@ const ActivityDayDetails: React.FC = () => {
   const [data, setData] = useState<DayConsumption | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -59,10 +61,13 @@ const ActivityDayDetails: React.FC = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await shelfService.getConsumptionByDate(date);
-        setData(response);
+        const response = await shelfService.getConsumptionByDateCached(date);
+        setData(response.data);
+        setIsUsingCachedData(response.source === 'cache');
+        setLastSyncedAt(response.cachedAt ?? null);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Failed to load day details');
+        setIsUsingCachedData(false);
       } finally {
         setLoading(false);
       }
@@ -82,6 +87,20 @@ const ActivityDayDetails: React.FC = () => {
     });
   }, [date]);
 
+  const lastSyncLabel = useMemo(() => {
+    if (!lastSyncedAt) return null;
+
+    const parsed = new Date(lastSyncedAt);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    return parsed.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }, [lastSyncedAt]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -98,6 +117,13 @@ const ActivityDayDetails: React.FC = () => {
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{formattedDate}</h1>
           </div>
         </div>
+
+        {isUsingCachedData && (
+          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            Showing cached activity data while offline.
+            {lastSyncLabel ? ` Last sync: ${lastSyncLabel}.` : ''}
+          </div>
+        )}
 
         {loading ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 flex justify-center">

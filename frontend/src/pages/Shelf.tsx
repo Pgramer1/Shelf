@@ -96,6 +96,8 @@ const Shelf: React.FC = () => {
   const [allData, setAllData]           = useState<UserMedia[]>([]);
   const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
   const [loading, setLoading]           = useState(true);
+  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -181,18 +183,45 @@ const Shelf: React.FC = () => {
   const loadShelfData = async () => {
     setLoading(true);
     try {
-      const [shelf, heatmap] = await Promise.all([
-        shelfService.getUserShelf(),
-        shelfService.getConsumptionHeatmap(730),
+      const [shelfResult, heatmapResult] = await Promise.all([
+        shelfService.getUserShelfCached(),
+        shelfService.getConsumptionHeatmapCached(730),
       ]);
-      setAllData(shelf);
-      setHeatmapData(heatmap);
+      setAllData(shelfResult.data);
+      setHeatmapData(heatmapResult.data);
+
+      setIsUsingCachedData(shelfResult.source === 'cache' || heatmapResult.source === 'cache');
+
+      const timestamps = [shelfResult.cachedAt, heatmapResult.cachedAt]
+        .filter((value): value is string => Boolean(value));
+
+      if (timestamps.length > 0) {
+        const latest = [...timestamps].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+        setLastSyncedAt(latest);
+      } else {
+        setLastSyncedAt(null);
+      }
     } catch (error) {
       console.error('Failed to load shelf data:', error);
+      setIsUsingCachedData(false);
     } finally {
       setLoading(false);
     }
   };
+
+  const lastSyncLabel = useMemo(() => {
+    if (!lastSyncedAt) return null;
+
+    const parsed = new Date(lastSyncedAt);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    return parsed.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }, [lastSyncedAt]);
 
   const visibleData = useMemo(() => {
     const query = normalizeText(searchQuery);
@@ -526,6 +555,15 @@ const Shelf: React.FC = () => {
               )}
             </div>
           </header>
+
+          {isUsingCachedData && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+              <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                Showing cached data while connectivity is limited.
+                {lastSyncLabel ? ` Last sync: ${lastSyncLabel}.` : ''}
+              </div>
+            </div>
+          )}
 
           {activeSection === 'insights' && (
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
