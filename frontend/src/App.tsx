@@ -11,6 +11,33 @@ import ActivityDayDetails from './pages/ActivityDayDetails';
 import MediaDetailsPage from './pages/MediaDetails';
 import Profile from './pages/Profile';
 
+const ConnectivityBanner: React.FC = () => {
+  const [isOnline, setIsOnline] = React.useState<boolean>(navigator.onLine);
+
+  React.useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  if (isOnline) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-x-0 top-0 z-[100] border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-900">
+      You are offline. Shelf will keep showing cached pages until your connection is back.
+    </div>
+  );
+};
+
 const OAuthQueryHandler: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,6 +70,7 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ConnectivityBanner />
         <OAuthQueryHandler />
         <Routes>
           <Route path="/login" element={<Login />} />
