@@ -21,7 +21,6 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
-  LogOut,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -98,7 +97,7 @@ const getStatusTabs = (type: string): string[] => {
 };
 
 const Shelf: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { activeType, activeStatus, sortBy } = useAppSelector((state) => state.collectionFilters);
@@ -335,6 +334,25 @@ const Shelf: React.FC = () => {
     return `${visibleData.length} ${typePart}${statusPart}${searchPart}`;
   };
 
+  const cycleMobileViewMode = () => {
+    const nextMode = mobileCollectionViewMode === 'single'
+      ? 'double'
+      : mobileCollectionViewMode === 'double'
+        ? 'list'
+        : 'single';
+    dispatch(setShelfMobileCollectionViewMode(nextMode));
+  };
+
+  const cycleDesktopViewMode = () => {
+    dispatch(setShelfDesktopCollectionViewMode(desktopCollectionViewMode === 'cards' ? 'list' : 'cards'));
+  };
+
+  const mobileViewTitle = mobileCollectionViewMode === 'single'
+    ? 'One at a time view'
+    : mobileCollectionViewMode === 'double'
+      ? 'Two at a time view'
+      : 'List view';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="flex min-h-screen">
@@ -390,6 +408,35 @@ const Shelf: React.FC = () => {
                 <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
+                    onClick={cycleMobileViewMode}
+                    className="sm:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition"
+                    aria-label={mobileViewTitle}
+                    title={mobileViewTitle}
+                  >
+                    {mobileCollectionViewMode === 'single' ? (
+                      <span className="inline-flex h-5 w-4 items-center justify-center rounded-sm border-2 border-current" />
+                    ) : mobileCollectionViewMode === 'double' ? (
+                      <span className="grid h-5 w-6 grid-cols-2 gap-1">
+                        <span className="rounded-sm border-2 border-current" />
+                        <span className="rounded-sm border-2 border-current" />
+                      </span>
+                    ) : (
+                      <List className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cycleDesktopViewMode}
+                    className="hidden sm:inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition"
+                    aria-label={desktopCollectionViewMode === 'cards' ? 'Cards view' : 'List view'}
+                    title={desktopCollectionViewMode === 'cards' ? 'Cards view' : 'List view'}
+                  >
+                    {desktopCollectionViewMode === 'cards' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setIsDarkMode((prev) => !prev)}
                     className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition"
                     aria-label="Toggle theme"
@@ -412,14 +459,6 @@ const Shelf: React.FC = () => {
                   >
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">Profile</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline">Logout</span>
                   </button>
                 </div>
               </div>
@@ -543,85 +582,6 @@ const Shelf: React.FC = () => {
                       </select>
                     </label>
 
-                    <div className="min-w-0 md:hidden">
-                      <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">View</span>
-                      <div className="grid grid-cols-3 gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-1">
-                        <button
-                          type="button"
-                          onClick={() => dispatch(setShelfMobileCollectionViewMode('single'))}
-                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'single'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                          aria-pressed={mobileCollectionViewMode === 'single'}
-                          aria-label="One at a time view"
-                          title="One at a time"
-                        >
-                          <span className="sr-only">One at a time</span>
-                          <span className="mx-auto inline-flex h-5 w-4 items-center justify-center rounded-sm border-2 border-current" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => dispatch(setShelfMobileCollectionViewMode('double'))}
-                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'double'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                          aria-pressed={mobileCollectionViewMode === 'double'}
-                          aria-label="Two at a time view"
-                          title="Two at a time"
-                        >
-                          <span className="sr-only">Two at a time</span>
-                          <span className="mx-auto grid h-5 w-6 grid-cols-2 gap-1">
-                            <span className="rounded-sm border-2 border-current" />
-                            <span className="rounded-sm border-2 border-current" />
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => dispatch(setShelfMobileCollectionViewMode('list'))}
-                          className={`h-9 rounded-md text-sm font-medium transition ${mobileCollectionViewMode === 'list'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                          aria-pressed={mobileCollectionViewMode === 'list'}
-                          aria-label="List view"
-                          title="List"
-                        >
-                          <span className="sr-only">List</span>
-                          <List className="mx-auto h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="min-w-0 hidden md:block md:col-span-12">
-                      <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">View</span>
-                      <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-1 max-w-xs">
-                        <button
-                          type="button"
-                          onClick={() => dispatch(setShelfDesktopCollectionViewMode('cards'))}
-                          className={`h-9 rounded-md text-sm font-medium transition ${desktopCollectionViewMode === 'cards'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                          aria-pressed={desktopCollectionViewMode === 'cards'}
-                          aria-label="Cards view"
-                          title="Cards"
-                        >
-                          <span className="sr-only">Cards</span>
-                          <LayoutGrid className="mx-auto h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => dispatch(setShelfDesktopCollectionViewMode('list'))}
-                          className={`h-9 rounded-md text-sm font-medium transition ${desktopCollectionViewMode === 'list'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                          aria-pressed={desktopCollectionViewMode === 'list'}
-                          aria-label="List view"
-                          title="List"
-                        >
-                          <span className="sr-only">List</span>
-                          <List className="mx-auto h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </>
               )}

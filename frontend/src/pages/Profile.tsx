@@ -9,6 +9,7 @@ import {
   Film,
   Gamepad2,
   Heart,
+  LogOut,
   Pencil,
   RefreshCw,
   Search,
@@ -33,7 +34,7 @@ const croodlesUrl = (seed: string) => `https://api.dicebear.com/9.x/croodles/svg
 const Profile: React.FC = () => {
   const { username: routeUsername } = useParams<{ username: string }>();
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user, login, logout } = useAuth();
   const isViewingOtherUser = !!routeUsername && routeUsername.toLowerCase() !== (user?.username || '').toLowerCase();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -445,14 +446,24 @@ const Profile: React.FC = () => {
                     </button>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingProfile(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm text-red-600 dark:text-red-400"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </>
                 )}
               </div>
             )}
