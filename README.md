@@ -37,8 +37,8 @@ A full-stack web application for tracking your movies, TV series, anime, games, 
 - Location: `browser-extension/`
 - Tracks playback activity from supported legal/public platforms (Netflix, Amazon Prime Video, YouTube)
 - Uses hybrid sync:
-    - First detection asks user to confirm "Add to Shelf"
-    - Existing shelf entries auto-update progress
+  - First detection asks user to confirm "Add to Shelf"
+  - Existing shelf entries auto-update progress
 - Uses backend Google OAuth with extension callback allowlist
 - Explicitly excludes piracy-site support
 

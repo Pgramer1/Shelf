@@ -23,6 +23,7 @@ CORS_ALLOWED_ORIGIN_PATTERNS=chrome-extension://*,edge-extension://*
 4. Reopen popup and verify account state shows signed in.
 
 Expected:
+
 - Callback tab closes automatically.
 - Popup shows signed-in user.
 
@@ -32,6 +33,7 @@ Expected:
 2. Open extension popup.
 
 Expected:
+
 - Latest Detection shows video title and progress percent.
 - If title is not already in shelf, a pending item appears under Pending Confirmations.
 
@@ -41,6 +43,7 @@ Expected:
 2. Open your Shelf web app and check the item is present.
 
 Expected:
+
 - Item appears in your shelf.
 - Pending entry disappears from popup.
 
@@ -50,6 +53,7 @@ Expected:
 2. Refresh shelf item details in web app.
 
 Expected:
+
 - Progress increases automatically.
 - Status changes to COMPLETED when progress reaches total units.
 
@@ -61,6 +65,7 @@ Expected:
 4. Accept host permission prompt.
 
 Expected:
+
 - Permission prompt appears.
 - After grant, detection starts on that domain when a video is present.
 
@@ -70,6 +75,7 @@ Expected:
 2. Deny permission prompt.
 
 Expected:
+
 - Save still succeeds.
 - Options status shows permission-denied warning.
 - No detection or sync on denied domain.
@@ -80,11 +86,13 @@ Expected:
 2. Play content again on a supported site.
 
 Expected:
+
 - Detection can still appear as latest activity.
 - No shelf write occurs until sign-in is restored.
 
 ## Quick API Verification (Optional)
 
 After a sync action, verify backend rows changed:
+
 - `GET /api/shelf` includes updated progress.
 - `GET /api/shelf/activity/heatmap` reflects activity increments.

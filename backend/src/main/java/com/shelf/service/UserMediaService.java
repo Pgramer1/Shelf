@@ -243,6 +243,7 @@ public class UserMediaService {
             throw new RuntimeException("Unauthorized");
         }
 
+        consumptionLogRepository.deleteByUserMedia_Id(userMediaId);
         userMediaRepository.delete(userMedia);
     }
 

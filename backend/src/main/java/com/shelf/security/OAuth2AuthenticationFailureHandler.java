@@ -39,8 +39,8 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
         }
 
         String redirectTarget = redirectTargetCookieRepository.loadRedirectTarget(request)
-            .map(redirectTargetValidator::resolveOrDefault)
-            .orElse(redirectTargetValidator.getDefaultRedirectUri());
+                .map(redirectTargetValidator::resolveOrDefault)
+                .orElse(redirectTargetValidator.getDefaultRedirectUri());
         redirectTargetCookieRepository.clearRedirectTarget(response);
 
         String failureTarget = redirectTarget;
@@ -49,7 +49,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
         }
 
         String targetUrl = UriComponentsBuilder
-            .fromUriString(failureTarget)
+                .fromUriString(failureTarget)
                 .queryParam("oauth_error", message)
                 .build().toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

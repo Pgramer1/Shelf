@@ -89,7 +89,8 @@ public class AuthController {
         }
 
         if (clientRegistrationRepository != null) {
-            redirectTargetCookieRepository.saveRedirectTarget(response, redirectTargetValidator.resolveOrDefault(redirectTarget));
+            redirectTargetCookieRepository.saveRedirectTarget(response,
+                    redirectTargetValidator.resolveOrDefault(redirectTarget));
             String oauthStart = request.getContextPath() + "/oauth2/authorization/google";
             response.sendRedirect(oauthStart);
             return;

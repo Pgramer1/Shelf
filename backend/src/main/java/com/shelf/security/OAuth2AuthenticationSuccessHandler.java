@@ -41,8 +41,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String token = jwtTokenProvider.generateToken(userDetails);
 
         String redirectTarget = redirectTargetCookieRepository.loadRedirectTarget(request)
-            .map(redirectTargetValidator::resolveOrDefault)
-            .orElse(redirectTargetValidator.getDefaultRedirectUri());
+                .map(redirectTargetValidator::resolveOrDefault)
+                .orElse(redirectTargetValidator.getDefaultRedirectUri());
         redirectTargetCookieRepository.clearRedirectTarget(response);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(normalizeRedirectUri(redirectTarget))
