@@ -112,8 +112,10 @@ const Shelf: React.FC = () => {
   const [allData, setAllData]           = useState<UserMedia[]>([]);
   const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
   const [loading, setLoading]           = useState(true);
-  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [isShelfUsingCachedData, setIsShelfUsingCachedData] = useState(false);
+  const [isHeatmapUsingCachedData, setIsHeatmapUsingCachedData] = useState(false);
+  const [shelfLastSyncedAt, setShelfLastSyncedAt] = useState<string | null>(null);
+  const [heatmapLastSyncedAt, setHeatmapLastSyncedAt] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -211,20 +213,14 @@ const Shelf: React.FC = () => {
       setAllData(shelfResult.data);
       setHeatmapData(heatmapResult.data);
 
-      setIsUsingCachedData(shelfResult.source === 'cache' || heatmapResult.source === 'cache');
-
-      const timestamps = [shelfResult.cachedAt, heatmapResult.cachedAt]
-        .filter((value): value is string => Boolean(value));
-
-      if (timestamps.length > 0) {
-        const latest = [...timestamps].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-        setLastSyncedAt(latest);
-      } else {
-        setLastSyncedAt(null);
-      }
+      setIsShelfUsingCachedData(shelfResult.source === 'cache');
+      setIsHeatmapUsingCachedData(heatmapResult.source === 'cache');
+      setShelfLastSyncedAt(shelfResult.cachedAt ?? null);
+      setHeatmapLastSyncedAt(heatmapResult.cachedAt ?? null);
     } catch (error) {
       console.error('Failed to load shelf data:', error);
-      setIsUsingCachedData(false);
+      setIsShelfUsingCachedData(false);
+      setIsHeatmapUsingCachedData(false);
     } finally {
       if (!options?.silent) {
         setLoading(false);
@@ -237,6 +233,29 @@ const Shelf: React.FC = () => {
   useEffect(() => {
     void loadShelfData();
   }, [loadShelfData]);
+
+  const isUsingCachedData = useMemo(() => {
+    if (activeSection === 'collection') {
+      return isShelfUsingCachedData;
+    }
+
+    return isShelfUsingCachedData || isHeatmapUsingCachedData;
+  }, [activeSection, isShelfUsingCachedData, isHeatmapUsingCachedData]);
+
+  const lastSyncedAt = useMemo(() => {
+    if (activeSection === 'collection') {
+      return shelfLastSyncedAt;
+    }
+
+    const timestamps = [shelfLastSyncedAt, heatmapLastSyncedAt]
+      .filter((value): value is string => Boolean(value));
+
+    if (timestamps.length === 0) {
+      return null;
+    }
+
+    return [...timestamps].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+  }, [activeSection, shelfLastSyncedAt, heatmapLastSyncedAt]);
 
   useEffect(() => {
     const refreshIfOnline = () => {
@@ -638,7 +657,7 @@ const Shelf: React.FC = () => {
           {isUsingCachedData && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
               <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                Showing cached data while connectivity is limited.
+                Showing cached data due to a recent connectivity or server issue.
                 {lastSyncLabel ? ` Last sync: ${lastSyncLabel}.` : ''}
               </div>
             </div>
