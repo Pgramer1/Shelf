@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
 import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
@@ -62,6 +62,7 @@ const sortOptions: { value: CollectionSortOption; label: string }[] = [
 
 const IN_PROGRESS_FILTER = 'IN_PROGRESS';
 const PLANNED_FILTER = 'PLANNED';
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 const inProgressStatuses = new Set(['WATCHING', 'READING', 'PLAYING']);
 const plannedStatuses = new Set(['PLAN_TO_WATCH', 'PLAN_TO_READ', 'PLAN_TO_PLAY']);
@@ -119,8 +120,7 @@ const Shelf: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const searchBoxRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => { loadShelfData(); }, []);
+  const isRefreshInFlightRef = useRef(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
@@ -192,8 +192,17 @@ const Shelf: React.FC = () => {
     return unique.slice(0, 6);
   }, [filteredByFacet, searchQuery]);
 
-  const loadShelfData = async () => {
-    setLoading(true);
+  const loadShelfData = useCallback(async (options?: { silent?: boolean }) => {
+    if (isRefreshInFlightRef.current) {
+      return;
+    }
+
+    isRefreshInFlightRef.current = true;
+
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
     try {
       const [shelfResult, heatmapResult] = await Promise.all([
         shelfService.getUserShelfCached(),
@@ -217,9 +226,47 @@ const Shelf: React.FC = () => {
       console.error('Failed to load shelf data:', error);
       setIsUsingCachedData(false);
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
+
+      isRefreshInFlightRef.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadShelfData();
+  }, [loadShelfData]);
+
+  useEffect(() => {
+    const refreshIfOnline = () => {
+      if (!navigator.onLine) return;
+      void loadShelfData({ silent: true });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshIfOnline();
+      }
+    };
+
+    window.addEventListener('online', refreshIfOnline);
+    window.addEventListener('focus', refreshIfOnline);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshIfOnline();
+      }
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.removeEventListener('online', refreshIfOnline);
+      window.removeEventListener('focus', refreshIfOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(intervalId);
+    };
+  }, [loadShelfData]);
 
   const lastSyncLabel = useMemo(() => {
     if (!lastSyncedAt) return null;
