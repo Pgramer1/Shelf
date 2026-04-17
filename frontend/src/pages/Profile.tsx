@@ -102,9 +102,10 @@ const Profile: React.FC = () => {
             setOutgoingRequests(outgoingData);
           }
         }
-      } catch {
+      } catch (err: any) {
         if (mounted) {
-          setError('Failed to load profile data');
+          const message = err?.response?.data?.message || err?.message || 'Failed to load profile data';
+          setError(message);
         }
       } finally {
         if (mounted) {
@@ -348,7 +349,7 @@ const Profile: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
-          <p className="text-red-600 dark:text-red-400 text-sm">Profile not found.</p>
+          <p className="text-red-600 dark:text-red-400 text-sm">{error || 'Profile not found.'}</p>
         </div>
       </div>
     );
