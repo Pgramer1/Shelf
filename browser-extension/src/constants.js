@@ -8,7 +8,7 @@ export const STORAGE_KEYS = {
 };
 
 export const DEFAULT_SETTINGS = {
-  apiBaseUrl: "http://localhost:8080/api",
+  apiBaseUrl: "https://shelf-uob1.onrender.com/api",
   syncEnabled: true,
   providers: {
     netflix: true,

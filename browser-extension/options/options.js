@@ -15,7 +15,7 @@ const fields = {
 const status = document.getElementById("status");
 
 const defaults = {
-  apiBaseUrl: "http://localhost:8080/api",
+  apiBaseUrl: "https://shelf-uob1.onrender.com/api",
   syncEnabled: true,
   providers: {
     netflix: true,

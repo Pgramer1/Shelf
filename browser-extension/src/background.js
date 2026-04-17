@@ -995,7 +995,7 @@ chrome.runtime.onInstalled.addListener(() => {
     if (!data[STORAGE_KEYS.SETTINGS]) {
       chrome.storage.local.set({
         [STORAGE_KEYS.SETTINGS]: {
-          apiBaseUrl: "http://localhost:8080/api",
+          apiBaseUrl: "https://shelf-uob1.onrender.com/api",
           syncEnabled: true,
           providers: {
             netflix: true,
