@@ -10,7 +10,7 @@
   ],
   "host_permissions": [
     "http://localhost:8080/*",
-    "https://shelf-backend.up.railway.app/*",
+    "https://shelf-uob1.onrender.com/*",
     "https://api.jikan.moe/*",
     "https://*.netflix.com/*",
     "https://*.primevideo.com/*",

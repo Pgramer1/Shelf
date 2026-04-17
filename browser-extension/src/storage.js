@@ -1,5 +1,23 @@
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from "./constants.js";
 
+const RENDER_API_BASE_URL = "https://shelf-uob1.onrender.com/api";
+const LEGACY_BACKEND_BASE_URLS = new Set([
+  "https://shelf-uob1.onrender.com"
+]);
+
+function normalizeApiBaseUrl(value) {
+  const trimmed = (value || "").trim().replace(/\/+$/, "");
+  if (!trimmed) {
+    return DEFAULT_SETTINGS.apiBaseUrl;
+  }
+
+  if (LEGACY_BACKEND_BASE_URLS.has(trimmed)) {
+    return RENDER_API_BASE_URL;
+  }
+
+  return trimmed;
+}
+
 function getLocal(keys) {
   return chrome.storage.local.get(keys);
 }
@@ -10,13 +28,18 @@ function setLocal(values) {
 
 export async function getSettings() {
   const data = await getLocal(STORAGE_KEYS.SETTINGS);
-  return {
+  const settings = {
     ...DEFAULT_SETTINGS,
     ...(data[STORAGE_KEYS.SETTINGS] || {}),
     providers: {
       ...DEFAULT_SETTINGS.providers,
       ...((data[STORAGE_KEYS.SETTINGS] || {}).providers || {})
     }
+  };
+
+  return {
+    ...settings,
+    apiBaseUrl: normalizeApiBaseUrl(settings.apiBaseUrl)
   };
 }
 
