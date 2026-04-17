@@ -21,6 +21,7 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
+  LogOut,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -98,7 +99,7 @@ const getStatusTabs = (type: string): string[] => {
 };
 
 const Shelf: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { activeType, activeStatus, sortBy } = useAppSelector((state) => state.collectionFilters);
@@ -419,6 +420,11 @@ const Shelf: React.FC = () => {
       ? 'Two at a time view'
       : 'List view';
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="flex min-h-screen">
@@ -525,6 +531,16 @@ const Shelf: React.FC = () => {
                   >
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">Profile</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex items-center justify-center sm:gap-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                    aria-label="Log out"
+                    title="Log out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline">Log out</span>
                   </button>
                 </div>
               </div>
