@@ -54,9 +54,9 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
 
   const rows = useMemo(
     () => [
-      { label: 'Planned' as FunnelStage, count: data.planned, fill: '#748D92' },
-      { label: 'In Progress' as FunnelStage, count: data.active, fill: '#124E66' },
-      { label: 'Completed' as FunnelStage, count: data.completed, fill: '#212A31' },
+      { label: 'Planned' as FunnelStage, count: data.planned, fill: 'var(--chart-text)' },
+      { label: 'In Progress' as FunnelStage, count: data.active, fill: 'var(--chart-1)' },
+      { label: 'Completed' as FunnelStage, count: data.completed, fill: 'var(--chart-2)' },
     ],
     [data.active, data.completed, data.planned]
   );
@@ -65,7 +65,7 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
   const activeShare = (activeRow.count / data.total) * 100;
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
+    <div className="insight-card insight-card-enter h-full">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Completion Funnel</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">From backlog to finished titles</p>
 
@@ -79,18 +79,19 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
       <div className="h-56 mb-4">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} margin={{ top: 8, right: 8, left: -18, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#748D92" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--chart-text)' }} axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--chart-text)' }} axisLine={false} tickLine={false} />
             <Tooltip
               cursor={{ fill: 'rgba(18, 78, 102, 0.18)' }}
-              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
-              labelStyle={{ color: '#D3D9D4' }}
+              contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', color: 'var(--chart-tooltip-text)' }}
+              labelStyle={{ color: 'var(--chart-tooltip-text)' }}
+              itemStyle={{ color: 'var(--chart-tooltip-text)' }}
               formatter={(value: number | string) => [`${Number(value)} title${Number(value) === 1 ? '' : 's'}`, 'Count']}
             />
             <Bar dataKey="count" radius={[10, 10, 0, 0]}>
               {rows.map((row) => (
-                <Cell key={row.label} fill={row.fill} opacity={activeStage === row.label ? 1 : 0.45} />
+                <Cell key={row.label} fill={row.fill} opacity={activeStage === row.label ? 1 : 0.6} />
               ))}
             </Bar>
           </BarChart>

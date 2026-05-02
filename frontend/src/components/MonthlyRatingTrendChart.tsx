@@ -105,7 +105,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
   const ratedUpdates = monthlyData.reduce((sum, point) => sum + point.count, 0);
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
+    <div className="insight-card insight-card-enter h-full">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Monthly Rating Trend</h3>
@@ -143,30 +143,31 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
       <div className="h-44 mb-1">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#748D92" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--chart-text)' }} axisLine={false} tickLine={false} />
             <YAxis
               domain={[1, 10]}
               ticks={[1, 3, 5, 7, 9]}
               allowDecimals={false}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'var(--chart-text)' }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
-              labelStyle={{ color: '#D3D9D4' }}
+              contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', color: 'var(--chart-tooltip-text)' }}
+              labelStyle={{ color: 'var(--chart-tooltip-text)' }}
+              itemStyle={{ color: 'var(--chart-tooltip-text)' }}
               labelFormatter={(label: string) => `${label} ${selectedYear}`}
             />
-            <ReferenceLine y={yearlyAverage} stroke="#748D92" strokeDasharray="4 4" />
-            <ReferenceLine x={MONTH_LABELS[activeMonth]} stroke="#124E66" strokeDasharray="2 2" />
+            <ReferenceLine y={yearlyAverage} stroke="var(--chart-text)" strokeDasharray="4 4" />
+            <ReferenceLine x={MONTH_LABELS[activeMonth]} stroke="var(--chart-1)" strokeDasharray="2 2" />
             <Line
               type="monotone"
               dataKey="average"
-              stroke="#124E66"
+              stroke="var(--chart-1)"
               strokeWidth={3}
-              dot={{ r: 4, stroke: '#124E66', strokeWidth: 2, fill: '#D3D9D4' }}
-              activeDot={{ r: 6, stroke: '#0F3F52', strokeWidth: 2, fill: '#D3D9D4' }}
+              dot={{ r: 4, stroke: 'var(--chart-1)', strokeWidth: 2, fill: 'var(--chart-tooltip-bg)' }}
+              activeDot={{ r: 6, stroke: 'var(--chart-1)', strokeWidth: 2, fill: 'var(--chart-tooltip-bg)' }}
               connectNulls={false}
               isAnimationActive={false}
             />

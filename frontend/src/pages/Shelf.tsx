@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { shelfService } from '../services/shelfService';
 import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
@@ -584,7 +584,7 @@ const Shelf: React.FC = () => {
                   </div>
 
                   <div className={`${showMobileFilters ? 'grid' : 'hidden'} md:grid grid-cols-1 md:grid-cols-12 gap-3 border-t border-gray-100 dark:border-gray-700 pt-3`}>
-                    <div className="min-w-0 md:col-span-12" ref={searchBoxRef}>
+                    <div className="min-w-0 md:col-span-4 lg:col-span-5" ref={searchBoxRef}>
                       <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Search Collection</span>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -638,7 +638,7 @@ const Shelf: React.FC = () => {
                       </div>
                     </div>
 
-                    <label className="min-w-0 md:col-span-4">
+                    <label className="min-w-0 md:col-span-2 lg:col-span-2">
                       <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Type</span>
                       <select
                         value={activeType}
@@ -654,7 +654,7 @@ const Shelf: React.FC = () => {
                       </select>
                     </label>
 
-                    <label className="min-w-0 md:col-span-4">
+                    <label className="min-w-0 md:col-span-3 lg:col-span-2">
                       <span className="mb-1 block text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</span>
                       <select
                         value={activeStatus}
@@ -671,7 +671,7 @@ const Shelf: React.FC = () => {
                       </select>
                     </label>
 
-                    <label className="min-w-0 md:col-span-4">
+                    <label className="min-w-0 md:col-span-3 lg:col-span-3">
                       <span className="mb-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
                         <SlidersHorizontal className="w-3 h-3" /> Sort By
                       </span>
@@ -837,7 +837,11 @@ const Shelf: React.FC = () => {
                               <MediaCard
                                 userMedia={item}
                                 onDelete={handleDelete}
-                                onUpdate={loadShelfData}
+                                onRefresh={loadShelfData}
+                                onProgressUpdate={async (id, data) => {
+                                  await shelfService.updateMedia(id, data);
+                                  loadShelfData();
+                                }}
                               />
                             </div>
                           ))}
@@ -864,7 +868,11 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onUpdate={loadShelfData}
+                              onRefresh={loadShelfData}
+                              onProgressUpdate={async (id, data) => {
+                                await shelfService.updateMedia(id, data);
+                                loadShelfData();
+                              }}
                             />
                           ))}
                         </div>

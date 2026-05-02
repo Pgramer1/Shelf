@@ -49,7 +49,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
   );
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
+    <div className="insight-card insight-card-enter h-full">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Rating Distribution</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">How your ratings are spread from 1 to 10</p>
 
@@ -74,18 +74,19 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
       <div className="h-44 mb-3">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#748D92" vertical={false} />
-            <XAxis dataKey="rating" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+            <XAxis dataKey="rating" tick={{ fontSize: 10, fill: 'var(--chart-text)' }} axisLine={false} tickLine={false} />
             <YAxis
               allowDecimals={false}
               domain={[0, maxCount]}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'var(--chart-text)' }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
-              labelStyle={{ color: '#D3D9D4' }}
+              contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid var(--chart-tooltip-border)', color: 'var(--chart-tooltip-text)' }}
+              labelStyle={{ color: 'var(--chart-tooltip-text)' }}
+              itemStyle={{ color: 'var(--chart-tooltip-text)' }}
               formatter={(value: number | string, _name: string, item: { payload?: { rating: number } }) => {
                 const rating = item.payload?.rating;
                 const count = Number(value);
@@ -94,7 +95,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
             />
             <Bar dataKey="count" radius={[8, 8, 0, 0]}>
               {chartData.map((entry) => (
-                <Cell key={entry.rating} fill={selectedRating === entry.rating ? '#124E66' : '#748D92'} />
+                <Cell key={entry.rating} fill={selectedRating === entry.rating ? 'var(--chart-1)' : 'var(--chart-text)'} opacity={selectedRating === entry.rating ? 1 : 0.6} />
               ))}
             </Bar>
           </BarChart>

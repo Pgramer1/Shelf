@@ -44,7 +44,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onProgressUp
 
     setUpdating(true);
     try {
-      let nextProgress = pendingProgressRef.current;
+      let nextProgress: number | null = pendingProgressRef.current;
       while (nextProgress !== null) {
         pendingProgressRef.current = null;
         const isNowComplete = nextProgress === userMedia.media.totalUnits;

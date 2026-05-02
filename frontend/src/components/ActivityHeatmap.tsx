@@ -29,11 +29,11 @@ function parseDateParts(dateStr: string) {
 }
 
 function cellColor(count: number): string {
-  if (count === 0) return 'bg-gray-100 dark:bg-surface-hover/80';
-  if (count === 1) return 'bg-primary/25 dark:bg-primary/45';
-  if (count <= 3) return 'bg-primary/45 dark:bg-primary/65';
-  if (count <= 6) return 'bg-mid/60 dark:bg-mid/80';
-  return 'bg-dark/80 dark:bg-light/70';
+  if (count === 0) return 'bg-gray-100 dark:bg-white/5';
+  if (count === 1) return 'bg-emerald-200 dark:bg-emerald-900/50';
+  if (count <= 3) return 'bg-emerald-300 dark:bg-emerald-800/70';
+  if (count <= 6) return 'bg-emerald-400 dark:bg-emerald-700/90';
+  return 'bg-emerald-500 dark:bg-emerald-800';
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
@@ -172,7 +172,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   return (
     <div
       ref={containerRef}
-      className="relative insight-card-enter bg-white dark:bg-surface rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 p-4 sm:p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover"
+      className="relative insight-card insight-card-enter"
     >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
         <div>

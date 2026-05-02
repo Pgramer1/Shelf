@@ -7,6 +7,32 @@
 @layer base {
   :root {
     font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    
+    /* Chart Colors */
+    --chart-1: #10b981;
+    --chart-2: #3b82f6;
+    --chart-3: #f59e0b;
+    --chart-4: #ef4444;
+    --chart-5: #8b5cf6;
+    --chart-grid: #e5e7eb;
+    --chart-text: #64748b;
+    --chart-tooltip-bg: rgba(255, 255, 255, 0.95);
+    --chart-tooltip-border: #e2e8f0;
+    --chart-tooltip-text: #0f172a;
+  }
+
+  .dark {
+    /* Chart Colors - Vibrant on Slate */
+    --chart-1: #10b981;
+    --chart-2: #3b82f6;
+    --chart-3: #f59e0b;
+    --chart-4: #ef4444;
+    --chart-5: #8b5cf6;
+    --chart-grid: rgba(255, 255, 255, 0.05);
+    --chart-text: #94a3b8;
+    --chart-tooltip-bg: #1e293b;
+    --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+    --chart-tooltip-text: #f8fafc;
   }
 
   body {
@@ -21,7 +47,11 @@
   }
 
   .insight-detail-panel {
-    @apply rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100/80 dark:bg-surface-hover px-3 py-2;
+    @apply rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100/80 dark:bg-slate-800/50 backdrop-blur-sm px-3 py-2;
+  }
+
+  .insight-card {
+    @apply bg-white dark:bg-slate-900/40 dark:backdrop-blur-md rounded-2xl shadow-sm border border-gray-200 dark:border-white/5 p-5 transition-all duration-300 hover:shadow-lg dark:hover:bg-slate-900/60 dark:hover:border-white/10;
   }
 
   .insight-chip {
