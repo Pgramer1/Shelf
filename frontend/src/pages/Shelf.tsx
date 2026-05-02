@@ -1,7 +1,8 @@
 ﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { shelfService } from '../services/shelfService';
-import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
+import { CachedReadResult, shelfService } from '../services/shelfService';
+import { HeatmapDayActivity, UserMedia, MediaType, UserMediaRequest } from '../types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   CollectionSortOption,
@@ -112,20 +113,125 @@ const Shelf: React.FC = () => {
     mobileCollectionViewMode,
     desktopCollectionViewMode,
   } = useAppSelector((state) => state.shelfUi);
-  const [allData, setAllData]           = useState<UserMedia[]>([]);
-  const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [isShelfUsingCachedData, setIsShelfUsingCachedData] = useState(false);
-  const [isHeatmapUsingCachedData, setIsHeatmapUsingCachedData] = useState(false);
-  const [shelfLastSyncedAt, setShelfLastSyncedAt] = useState<string | null>(null);
-  const [heatmapLastSyncedAt, setHeatmapLastSyncedAt] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const searchBoxRef = useRef<HTMLDivElement | null>(null);
-  const isRefreshInFlightRef = useRef(false);
+  const queryClient = useQueryClient();
+
+  const shelfQuery = useQuery<CachedReadResult<UserMedia[]>>({
+    queryKey: ['shelf'],
+    queryFn: shelfService.getUserShelfCached,
+    refetchInterval: () => {
+      if (typeof document === 'undefined') return false;
+      return document.visibilityState === 'visible' ? AUTO_REFRESH_INTERVAL_MS : false;
+    },
+  });
+
+  const heatmapQuery = useQuery<CachedReadResult<HeatmapDayActivity[]>>({
+    queryKey: ['heatmap', 730],
+    queryFn: () => shelfService.getConsumptionHeatmapCached(730),
+    refetchInterval: () => {
+      if (typeof document === 'undefined') return false;
+      return document.visibilityState === 'visible' ? AUTO_REFRESH_INTERVAL_MS : false;
+    },
+  });
+
+  const updateMediaMutation = useMutation<
+    UserMedia,
+    Error,
+    { id: number; data: UserMediaRequest },
+    { previous?: CachedReadResult<UserMedia[]> }
+  >({
+    mutationFn: ({ id, data }: { id: number; data: UserMediaRequest }) => shelfService.updateMedia(id, data),
+    onMutate: async ({ id, data }: { id: number; data: UserMediaRequest }) => {
+      await queryClient.cancelQueries({ queryKey: ['shelf'] });
+      const previous = queryClient.getQueryData<CachedReadResult<UserMedia[]>>(['shelf']);
+
+      if (previous) {
+        const updatedAt = new Date().toISOString();
+        const updated = previous.data.map((item: UserMedia) => {
+          if (item.id !== id) return item;
+          return {
+            ...item,
+            progress: data.progress,
+            status: data.status,
+            rating: data.rating,
+            notes: data.notes,
+            isFavorite: data.isFavorite,
+            startedAt: data.startedAt,
+            completedAt: data.completedAt,
+            updatedAt,
+          };
+        });
+
+        queryClient.setQueryData<CachedReadResult<UserMedia[]>>(['shelf'], {
+          ...previous,
+          data: updated,
+        });
+      }
+
+      return { previous };
+    },
+    onError: (
+      _error: Error,
+      _variables: { id: number; data: UserMediaRequest },
+      context?: { previous?: CachedReadResult<UserMedia[]> }
+    ) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['shelf'], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['shelf'] });
+      queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
+    },
+  });
+
+  const deleteMediaMutation = useMutation<
+    void,
+    Error,
+    number,
+    { previous?: CachedReadResult<UserMedia[]> }
+  >({
+    mutationFn: (id: number) => shelfService.deleteFromShelf(id),
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['shelf'] });
+      const previous = queryClient.getQueryData<CachedReadResult<UserMedia[]>>(['shelf']);
+
+      if (previous) {
+        queryClient.setQueryData<CachedReadResult<UserMedia[]>>(['shelf'], {
+          ...previous,
+          data: previous.data.filter((item: UserMedia) => item.id !== id),
+        });
+      }
+
+      return { previous };
+    },
+    onError: (
+      _error: Error,
+      _variables: number,
+      context?: { previous?: CachedReadResult<UserMedia[]> }
+    ) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['shelf'], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['shelf'] });
+      queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
+    },
+  });
+
+  const allData = useMemo<UserMedia[]>(() => shelfQuery.data?.data ?? [], [shelfQuery.data]);
+  const heatmapData = useMemo<HeatmapDayActivity[]>(() => heatmapQuery.data?.data ?? [], [heatmapQuery.data]);
+  const loading = shelfQuery.isLoading || heatmapQuery.isLoading;
+  const isShelfUsingCachedData = shelfQuery.data?.source === 'cache';
+  const isHeatmapUsingCachedData = heatmapQuery.data?.source === 'cache';
+  const shelfLastSyncedAt = shelfQuery.data?.cachedAt ?? null;
+  const heatmapLastSyncedAt = heatmapQuery.data?.cachedAt ?? null;
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
@@ -197,46 +303,6 @@ const Shelf: React.FC = () => {
     return unique.slice(0, 6);
   }, [filteredByFacet, searchQuery]);
 
-  const loadShelfData = useCallback(async (options?: { silent?: boolean }) => {
-    if (isRefreshInFlightRef.current) {
-      return;
-    }
-
-    isRefreshInFlightRef.current = true;
-
-    if (!options?.silent) {
-      setLoading(true);
-    }
-
-    try {
-      const [shelfResult, heatmapResult] = await Promise.all([
-        shelfService.getUserShelfCached(),
-        shelfService.getConsumptionHeatmapCached(730),
-      ]);
-      setAllData(shelfResult.data);
-      setHeatmapData(heatmapResult.data);
-
-      setIsShelfUsingCachedData(shelfResult.source === 'cache');
-      setIsHeatmapUsingCachedData(heatmapResult.source === 'cache');
-      setShelfLastSyncedAt(shelfResult.cachedAt ?? null);
-      setHeatmapLastSyncedAt(heatmapResult.cachedAt ?? null);
-    } catch (error) {
-      console.error('Failed to load shelf data:', error);
-      setIsShelfUsingCachedData(false);
-      setIsHeatmapUsingCachedData(false);
-    } finally {
-      if (!options?.silent) {
-        setLoading(false);
-      }
-
-      isRefreshInFlightRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadShelfData();
-  }, [loadShelfData]);
-
   const isUsingCachedData = useMemo(() => {
     if (activeSection === 'collection') {
       return isShelfUsingCachedData;
@@ -259,36 +325,6 @@ const Shelf: React.FC = () => {
 
     return [...timestamps].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
   }, [activeSection, shelfLastSyncedAt, heatmapLastSyncedAt]);
-
-  useEffect(() => {
-    const refreshIfOnline = () => {
-      if (!navigator.onLine) return;
-      void loadShelfData({ silent: true });
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshIfOnline();
-      }
-    };
-
-    window.addEventListener('online', refreshIfOnline);
-    window.addEventListener('focus', refreshIfOnline);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        refreshIfOnline();
-      }
-    }, AUTO_REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.removeEventListener('online', refreshIfOnline);
-      window.removeEventListener('focus', refreshIfOnline);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.clearInterval(intervalId);
-    };
-  }, [loadShelfData]);
 
   const lastSyncLabel = useMemo(() => {
     if (!lastSyncedAt) return null;
@@ -409,12 +445,23 @@ const Shelf: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await shelfService.deleteFromShelf(id);
-      loadShelfData();
+      await deleteMediaMutation.mutateAsync(id);
     } catch (error) {
       console.error('Failed to delete:', error);
     }
   };
+
+  const handleProgressUpdate = useCallback(
+    async (id: number, data: UserMediaRequest) => {
+      await updateMediaMutation.mutateAsync({ id, data });
+    },
+    [updateMediaMutation]
+  );
+
+  const handleRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['shelf'] });
+    void queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
+  }, [queryClient]);
 
   const typeTabs   = ['ALL', ...Object.values(MediaType)];
   const statusTabs = getStatusTabs(activeType);
@@ -826,7 +873,8 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onUpdate={loadShelfData}
+                              onProgressUpdate={handleProgressUpdate}
+                              onRefresh={handleRefresh}
                             />
                           ))}
                         </div>
@@ -837,7 +885,8 @@ const Shelf: React.FC = () => {
                               <MediaCard
                                 userMedia={item}
                                 onDelete={handleDelete}
-                                onUpdate={loadShelfData}
+                                onProgressUpdate={handleProgressUpdate}
+                                onRefresh={handleRefresh}
                               />
                             </div>
                           ))}
@@ -853,7 +902,8 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onUpdate={loadShelfData}
+                              onProgressUpdate={handleProgressUpdate}
+                              onRefresh={handleRefresh}
                             />
                           ))}
                         </div>
@@ -864,7 +914,8 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onUpdate={loadShelfData}
+                              onProgressUpdate={handleProgressUpdate}
+                              onRefresh={handleRefresh}
                             />
                           ))}
                         </div>
@@ -881,7 +932,11 @@ const Shelf: React.FC = () => {
       {isAddModalOpen && (
         <AddMediaModal
           onClose={() => setIsAddModalOpen(false)}
-          onSuccess={() => { setIsAddModalOpen(false); loadShelfData(); }}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            void queryClient.invalidateQueries({ queryKey: ['shelf'] });
+            void queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
+          }}
         />
       )}
 

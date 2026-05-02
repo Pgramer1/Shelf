@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Minus, Pencil, Plus, Star, Trash2 } from 'lucide-react';
-import { MediaType, Status, UserMedia } from '../types';
-import { shelfService } from '../services/shelfService';
+import { MediaType, Status, UserMedia, UserMediaRequest } from '../types';
 import EditMediaModal from './EditMediaModal';
 
 interface MediaListRowProps {
   userMedia: UserMedia;
   onDelete: (id: number) => void;
-  onUpdate: () => void;
+  onProgressUpdate: (id: number, data: UserMediaRequest) => Promise<void>;
+  onRefresh: () => void;
 }
 
-const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpdate }) => {
+const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onProgressUpdate, onRefresh }) => {
   const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localProgress, setLocalProgress] = useState(userMedia.progress);
   const [updating, setUpdating] = useState(false);
+  const pendingProgressRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLocalProgress(userMedia.progress);
+  }, [userMedia.progress]);
 
   const toLocalDateTimeString = (value: Date) => {
     const year = value.getFullYear();
@@ -46,32 +51,41 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
   };
 
   const handleProgressChange = async (newProgress: number) => {
-    if (newProgress < 0 || newProgress > totalUnits || updating || totalUnits === 0) return;
+    if (newProgress < 0 || newProgress > totalUnits || totalUnits === 0) return;
     setLocalProgress(newProgress);
+    pendingProgressRef.current = newProgress;
+
+    if (updating) return;
+
     setUpdating(true);
 
     try {
-      const isNowComplete = newProgress === totalUnits;
-      const activityAt = toLocalDateTimeString(new Date());
-      await shelfService.updateMedia(userMedia.id, {
-        mediaId: userMedia.media.id,
-        status:
-          isNowComplete
-            ? Status.COMPLETED
-            : userMedia.status === Status.COMPLETED
-              ? Status.WATCHING
-              : userMedia.status,
-        progress: newProgress,
-        rating: userMedia.rating,
-        notes: userMedia.notes,
-        isFavorite: userMedia.isFavorite,
-        startedAt: userMedia.startedAt,
-        completedAt: isNowComplete ? activityAt : userMedia.completedAt,
-        activityAt,
-      });
-      onUpdate();
+      let nextProgress = pendingProgressRef.current;
+      while (nextProgress !== null) {
+        pendingProgressRef.current = null;
+        const isNowComplete = nextProgress === totalUnits;
+        const activityAt = toLocalDateTimeString(new Date());
+        await onProgressUpdate(userMedia.id, {
+          mediaId: userMedia.media.id,
+          status:
+            isNowComplete
+              ? Status.COMPLETED
+              : userMedia.status === Status.COMPLETED
+                ? Status.WATCHING
+                : userMedia.status,
+          progress: nextProgress,
+          rating: userMedia.rating,
+          notes: userMedia.notes,
+          isFavorite: userMedia.isFavorite,
+          startedAt: userMedia.startedAt,
+          completedAt: isNowComplete ? activityAt : userMedia.completedAt,
+          activityAt,
+        });
+        nextProgress = pendingProgressRef.current;
+      }
     } catch {
       setLocalProgress(userMedia.progress);
+      pendingProgressRef.current = null;
     } finally {
       setUpdating(false);
     }
@@ -159,7 +173,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
                 <button
                   type="button"
                   onClick={() => handleProgressChange(localProgress - 1)}
-                  disabled={localProgress <= 0 || updating || totalUnits === 0}
+                  disabled={localProgress <= 0 || totalUnits === 0}
                   className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40"
                   aria-label="Decrease progress"
                 >
@@ -168,7 +182,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
                 <button
                   type="button"
                   onClick={() => handleProgressChange(localProgress + 1)}
-                  disabled={localProgress >= totalUnits || updating || totalUnits === 0}
+                  disabled={localProgress >= totalUnits || totalUnits === 0}
                   className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary text-white hover:bg-primary-hover disabled:opacity-40"
                   aria-label="Increase progress"
                 >
@@ -214,7 +228,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {
             setIsEditModalOpen(false);
-            onUpdate();
+            onRefresh();
           }}
         />
       )}
