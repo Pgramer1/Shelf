@@ -127,7 +127,7 @@ const ActivityDayDetails: React.FC = () => {
 
         {loading ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 flex justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-600" />
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
           </div>
         ) : error ? (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4 text-sm text-red-700 dark:text-red-300">
@@ -162,7 +162,7 @@ const ActivityDayDetails: React.FC = () => {
                       <h3 className="text-base font-semibold text-gray-900 dark:text-white">{item.title}</h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{getRangeLabel(item)}</p>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary/20 text-dark dark:bg-primary/40 dark:text-light">
                       {getTypeIcon(item.mediaType)}
                       {item.mediaType.replace('_', ' ')}
                     </span>

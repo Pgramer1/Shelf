@@ -105,7 +105,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
   const ratedUpdates = monthlyData.reduce((sum, point) => sum + point.count, 0);
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Monthly Rating Trend</h3>
@@ -143,7 +143,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
       <div className="h-44 mb-1">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#748D92" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis
               domain={[1, 10]}
@@ -156,15 +156,15 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
             <Tooltip
               labelFormatter={(label: string) => `${label} ${selectedYear}`}
             />
-            <ReferenceLine y={yearlyAverage} stroke="#94a3b8" strokeDasharray="4 4" />
-            <ReferenceLine x={MONTH_LABELS[activeMonth]} stroke="#06b6d4" strokeDasharray="2 2" />
+            <ReferenceLine y={yearlyAverage} stroke="#748D92" strokeDasharray="4 4" />
+            <ReferenceLine x={MONTH_LABELS[activeMonth]} stroke="#124E66" strokeDasharray="2 2" />
             <Line
               type="monotone"
               dataKey="average"
-              stroke="#2563eb"
+              stroke="#124E66"
               strokeWidth={3}
-              dot={{ r: 4, stroke: '#2563eb', strokeWidth: 2, fill: '#ffffff' }}
-              activeDot={{ r: 6, stroke: '#06b6d4', strokeWidth: 2, fill: '#ffffff' }}
+              dot={{ r: 4, stroke: '#124E66', strokeWidth: 2, fill: '#D3D9D4' }}
+              activeDot={{ r: 6, stroke: '#0F3F52', strokeWidth: 2, fill: '#D3D9D4' }}
               connectNulls={false}
               isAnimationActive={false}
             />

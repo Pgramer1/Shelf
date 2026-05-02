@@ -17,7 +17,7 @@
 
 @layer components {
   .insight-card-enter {
-    animation: insight-card-enter 0.45s ease-out both;
+    animation: insight-card-enter 0.22s ease-out both;
   }
 
   .insight-detail-panel {

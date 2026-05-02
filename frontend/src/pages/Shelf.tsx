@@ -18,7 +18,9 @@ import {
 } from '../store/shelfUiSlice';
 import {
   BarChart3,
+  CheckCircle2,
   ChevronDown,
+  Clock3,
   LayoutGrid,
   List,
   LogOut,
@@ -301,6 +303,29 @@ const Shelf: React.FC = () => {
       minute: '2-digit',
     });
   }, [lastSyncedAt]);
+
+  const insightsSummary = useMemo(() => {
+    const total = allData.length;
+    const favorites = allData.filter((item) => item.isFavorite).length;
+    const completed = allData.filter((item) => item.status === 'COMPLETED').length;
+    const inProgress = allData.filter((item) => inProgressStatuses.has(item.status)).length;
+    const ratings = allData
+      .map((item) => item.rating)
+      .filter((rating): rating is number => typeof rating === 'number');
+    const avgRating = ratings.length > 0
+      ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length
+      : null;
+    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+    return {
+      total,
+      favorites,
+      completed,
+      inProgress,
+      avgRating,
+      completionRate,
+    };
+  }, [allData]);
 
   const visibleData = useMemo(() => {
     const query = normalizeText(searchQuery);
@@ -683,7 +708,7 @@ const Shelf: React.FC = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               {loading ? (
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                 </div>
               ) : allData.length === 0 ? (
                 <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
@@ -692,6 +717,62 @@ const Shelf: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Total items</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.total}</p>
+                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                          <BarChart3 className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{insightsSummary.inProgress} in progress</p>
+                    </div>
+
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Favorites</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.favorites}</p>
+                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                          <Star className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">Highlights you love most</p>
+                    </div>
+
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Completion rate</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.completionRate.toFixed(1)}%</p>
+                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{insightsSummary.completed} completed</p>
+                    </div>
+
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Avg rating</p>
+                          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                            {insightsSummary.avgRating ? insightsSummary.avgRating.toFixed(1) : '—'}
+                          </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                          <Clock3 className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">Based on rated titles</p>
+                    </div>
+                  </div>
+
                   <ActivityHeatmap activityDays={heatmapData} />
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -718,7 +799,7 @@ const Shelf: React.FC = () => {
               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 {loading ? (
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                   </div>
                 ) : visibleData.length === 0 ? (
                   <div className="text-center py-16">
@@ -729,7 +810,7 @@ const Shelf: React.FC = () => {
                     <p className="text-gray-600 dark:text-gray-400 mb-4">Start building your collection by adding media</p>
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
+                      className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-lg transition"
                     >
                       <Plus className="w-5 h-5" />
                       Add Your First Media

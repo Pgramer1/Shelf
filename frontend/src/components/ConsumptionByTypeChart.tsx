@@ -15,11 +15,11 @@ const typeNames: Record<MediaType, string> = {
 };
 
 const typeColors: Record<MediaType, string> = {
-  [MediaType.MOVIE]: '#2563eb',
-  [MediaType.TV_SERIES]: '#0891b2',
-  [MediaType.ANIME]: '#0ea5e9',
-  [MediaType.GAME]: '#0284c7',
-  [MediaType.BOOK]: '#1d4ed8',
+  [MediaType.MOVIE]: '#124E66',
+  [MediaType.TV_SERIES]: '#748D92',
+  [MediaType.ANIME]: '#212A31',
+  [MediaType.GAME]: '#124E66',
+  [MediaType.BOOK]: '#748D92',
 };
 
 interface Slice {
@@ -63,7 +63,7 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
   const activeIndex = Math.max(0, slices.findIndex((slice) => slice.type === activeType));
 
   return (
-    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Content Mix</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Share of your shelf by media type</p>
 

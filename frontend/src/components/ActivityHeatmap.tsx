@@ -29,11 +29,11 @@ function parseDateParts(dateStr: string) {
 }
 
 function cellColor(count: number): string {
-  if (count === 0) return 'bg-slate-100 dark:bg-slate-800';
-  if (count === 1) return 'bg-sky-200 dark:bg-indigo-500/70';
-  if (count <= 3) return 'bg-sky-400 dark:bg-violet-500/80';
-  if (count <= 6) return 'bg-cyan-500 dark:bg-fuchsia-500/85';
-  return 'bg-teal-700 dark:bg-rose-400';
+  if (count === 0) return 'bg-gray-100 dark:bg-gray-700/60';
+  if (count === 1) return 'bg-primary/25 dark:bg-primary/45';
+  if (count <= 3) return 'bg-primary/45 dark:bg-primary/65';
+  if (count <= 6) return 'bg-mid/60 dark:bg-mid/75';
+  return 'bg-dark/80 dark:bg-light/60';
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
@@ -165,7 +165,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   };
 
   return (
-    <div className="insight-card-enter bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+    <div className="insight-card-enter bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
         <div>
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Watch History</h3>
@@ -190,7 +190,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
         </div>
       </div>
 
-      <div className="rounded-xl p-2 border border-gray-100 dark:border-slate-600 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900">
+      <div className="rounded-xl p-2 border border-gray-100 dark:border-slate-600 bg-white dark:bg-gray-800">
         <div className="grid gap-[2px] mb-2" style={weekGridStyle}>
           {weeks.map((_, ci) => (
             <div key={ci} className="text-center text-[9px] text-gray-400 dark:text-gray-500 leading-none truncate">
@@ -206,7 +206,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
                 <button
                   type="button"
                   key={day.date}
-                  className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-cyan-300 dark:hover:ring-fuchsia-300' : 'cursor-default'}`}
+                  className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary dark:hover:ring-light' : 'cursor-default'}`}
                   onMouseEnter={(e) => handleMouseEnter(e, day)}
                   onMouseLeave={() => setTooltip(null)}
                   onClick={() => openDetails(day)}
@@ -235,7 +235,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
           className="fixed z-50 pointer-events-none"
           style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
         >
-          <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-xl min-w-max max-w-xs">
+          <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-md min-w-max max-w-xs">
             <p className="font-semibold mb-1">{formatDate(tooltip.day.date)}</p>
             {tooltip.day.count === 0 ? (
               <p className="text-gray-400">No activity</p>
