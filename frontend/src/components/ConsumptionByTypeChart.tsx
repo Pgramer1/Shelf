@@ -15,11 +15,11 @@ const typeNames: Record<MediaType, string> = {
 };
 
 const typeColors: Record<MediaType, string> = {
-  [MediaType.MOVIE]: '#2563eb',
-  [MediaType.TV_SERIES]: '#0891b2',
-  [MediaType.ANIME]: '#0ea5e9',
-  [MediaType.GAME]: '#0284c7',
-  [MediaType.BOOK]: '#1d4ed8',
+  [MediaType.MOVIE]: '#124E66',
+  [MediaType.TV_SERIES]: '#748D92',
+  [MediaType.ANIME]: '#212A31',
+  [MediaType.GAME]: '#124E66',
+  [MediaType.BOOK]: '#748D92',
 };
 
 interface Slice {
@@ -63,7 +63,7 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
   const activeIndex = Math.max(0, slices.findIndex((slice) => slice.type === activeType));
 
   return (
-    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div className="h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Content Mix</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Share of your shelf by media type</p>
 
@@ -98,6 +98,8 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
                   ))}
                 </Pie>
                 <Tooltip
+                  contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
+                  labelStyle={{ color: '#D3D9D4' }}
                   formatter={(_value: number | string, _name: string, item: { payload?: Slice }) => {
                     const payload = item.payload;
                     if (!payload) {
@@ -128,8 +130,8 @@ const ConsumptionByTypeChart: React.FC<ConsumptionByTypeChartProps> = ({ allData
                 onFocus={() => setActiveType(slice.type)}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border text-left transition ${
                   isActive
-                    ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/40 dark:border-blue-700'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
+                    ? 'border-primary/60 bg-gray-100 dark:bg-primary/20 dark:border-primary/70'
+                    : 'border-gray-200 dark:border-white/10 hover:border-primary/40 dark:hover:border-primary/50'
                 }`}
               >
                 <span className="flex items-center gap-2 min-w-0">

@@ -440,7 +440,7 @@ const Profile: React.FC = () => {
                       type="button"
                       onClick={handleSaveProfile}
                       disabled={savingProfile}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-sm disabled:opacity-60"
                     >
                       <Check className="w-4 h-4" />
                       {savingProfile ? 'Saving...' : 'Save'}
@@ -459,7 +459,7 @@ const Profile: React.FC = () => {
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm text-red-600 dark:text-red-400"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-mid/40 dark:border-mid/50 text-sm text-mid dark:text-mid"
                     >
                       <LogOut className="w-4 h-4" />
                       Logout

@@ -80,7 +80,7 @@ const EditMediaModal: React.FC<EditMediaModalProps> = ({ userMedia, onClose, onS
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-lg w-full">
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Edit: {userMedia.media.title}

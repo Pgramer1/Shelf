@@ -49,7 +49,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
   );
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Rating Distribution</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">How your ratings are spread from 1 to 10</p>
 
@@ -61,11 +61,11 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Rated Titles</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{ratedCount}</p>
         </div>
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Average Rating</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{averageRating.toFixed(1)}</p>
         </div>
@@ -74,7 +74,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
       <div className="h-44 mb-3">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#748D92" vertical={false} />
             <XAxis dataKey="rating" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis
               allowDecimals={false}
@@ -84,6 +84,8 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
               tickLine={false}
             />
             <Tooltip
+              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
+              labelStyle={{ color: '#D3D9D4' }}
               formatter={(value: number | string, _name: string, item: { payload?: { rating: number } }) => {
                 const rating = item.payload?.rating;
                 const count = Number(value);
@@ -92,7 +94,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
             />
             <Bar dataKey="count" radius={[8, 8, 0, 0]}>
               {chartData.map((entry) => (
-                <Cell key={entry.rating} fill={selectedRating === entry.rating ? '#0891b2' : '#60a5fa'} />
+                <Cell key={entry.rating} fill={selectedRating === entry.rating ? '#124E66' : '#748D92'} />
               ))}
             </Bar>
           </BarChart>
@@ -109,7 +111,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({ allDa
               onMouseEnter={() => setActiveRating(entry.rating)}
               onFocus={() => setActiveRating(entry.rating)}
               onClick={() => setActiveRating((prev) => (prev === entry.rating ? null : entry.rating))}
-              className={`h-7 rounded-md text-[11px] font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+              className={`h-7 rounded-md text-[11px] font-medium transition ${isActive ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-surface-hover/90'}`}
             >
               {entry.rating}
             </button>

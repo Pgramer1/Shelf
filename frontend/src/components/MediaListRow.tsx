@@ -124,7 +124,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
             </div>
           )}
           {userMedia.isFavorite && (
-            <div className="absolute right-1 top-1 rounded-full bg-yellow-500 p-1">
+            <div className="absolute right-1 top-1 rounded-full bg-primary p-1">
               <Star className="h-3 w-3 fill-white text-white" />
             </div>
           )}
@@ -137,8 +137,8 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
                 {userMedia.media.title}
               </h3>
               {userMedia.rating !== undefined && userMedia.rating !== null && (
-                <span className="inline-flex items-center gap-1 shrink-0 text-xs sm:text-sm font-semibold text-yellow-500">
-                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                <span className="inline-flex items-center gap-1 shrink-0 text-xs sm:text-sm font-semibold text-mid">
+                  <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                   {userMedia.rating}
                 </span>
               )}
@@ -169,7 +169,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
                   type="button"
                   onClick={() => handleProgressChange(localProgress + 1)}
                   disabled={localProgress >= totalUnits || updating || totalUnits === 0}
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary text-white hover:bg-primary-hover disabled:opacity-40"
                   aria-label="Increase progress"
                 >
                   <Plus className="h-3 w-3" />
@@ -178,7 +178,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
             </div>
             <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
               <div
-                className="h-2 rounded-full bg-blue-600 transition-all"
+                className="h-2 rounded-full bg-primary transition-all"
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               />
             </div>
@@ -189,7 +189,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
           <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-hover transition"
             aria-label="Edit media"
             title="Edit"
           >
@@ -199,7 +199,7 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
             type="button"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-dark text-white hover:bg-surface-hover transition disabled:opacity-50"
             aria-label="Delete media"
             title="Delete"
           >

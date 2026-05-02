@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { UserMedia, Status, MediaType } from '../types';
-import { shelfService } from '../services/shelfService';
+import React, { useEffect, useRef, useState } from 'react';
+import { UserMedia, Status, MediaType, UserMediaRequest } from '../types';
 import { Pencil, Trash2, Star, Minus, Plus } from 'lucide-react';
 import EditMediaModal from './EditMediaModal';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +7,11 @@ import { useNavigate } from 'react-router-dom';
 interface MediaCardProps {
   userMedia: UserMedia;
   onDelete: (id: number) => void;
-  onUpdate: () => void;
+  onProgressUpdate: (id: number, data: UserMediaRequest) => Promise<void>;
+  onRefresh: () => void;
 }
 
-const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) => {
+const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onProgressUpdate, onRefresh }) => {
   const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -19,6 +19,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
   const [updating, setUpdating] = useState(false);
   const [editingProgress, setEditingProgress] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const pendingProgressRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLocalProgress(userMedia.progress);
+  }, [userMedia.progress]);
 
   const toLocalDateTimeString = (value: Date) => {
     const year = value.getFullYear();
@@ -31,26 +36,35 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
   };
 
   const handleProgressChange = async (newProgress: number) => {
-    if (newProgress < 0 || newProgress > userMedia.media.totalUnits || updating) return;
+    if (newProgress < 0 || newProgress > userMedia.media.totalUnits) return;
     setLocalProgress(newProgress);
+    pendingProgressRef.current = newProgress;
+
+    if (updating) return;
+
     setUpdating(true);
     try {
-      const isNowComplete = newProgress === userMedia.media.totalUnits;
-      const activityAt = toLocalDateTimeString(new Date());
-      await shelfService.updateMedia(userMedia.id, {
-        mediaId: userMedia.media.id,
-        status: isNowComplete ? Status.COMPLETED : userMedia.status === Status.COMPLETED ? Status.WATCHING : userMedia.status,
-        progress: newProgress,
-        rating: userMedia.rating,
-        notes: userMedia.notes,
-        isFavorite: userMedia.isFavorite,
-        startedAt: userMedia.startedAt,
-        completedAt: isNowComplete ? activityAt : userMedia.completedAt,
-        activityAt,
-      });
-      onUpdate();
+      let nextProgress = pendingProgressRef.current;
+      while (nextProgress !== null) {
+        pendingProgressRef.current = null;
+        const isNowComplete = nextProgress === userMedia.media.totalUnits;
+        const activityAt = toLocalDateTimeString(new Date());
+        await onProgressUpdate(userMedia.id, {
+          mediaId: userMedia.media.id,
+          status: isNowComplete ? Status.COMPLETED : userMedia.status === Status.COMPLETED ? Status.WATCHING : userMedia.status,
+          progress: nextProgress,
+          rating: userMedia.rating,
+          notes: userMedia.notes,
+          isFavorite: userMedia.isFavorite,
+          startedAt: userMedia.startedAt,
+          completedAt: isNowComplete ? activityAt : userMedia.completedAt,
+          activityAt,
+        });
+        nextProgress = pendingProgressRef.current;
+      }
     } catch {
       setLocalProgress(userMedia.progress);
+      pendingProgressRef.current = null;
     } finally {
       setUpdating(false);
     }
@@ -155,7 +169,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
               <div className="flex items-center gap-1 min-w-0">
                 <button
                   onClick={() => handleProgressChange(localProgress - 1)}
-                  disabled={localProgress <= 0 || updating}
+                  disabled={localProgress <= 0}
                   className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-30 transition"
                 >
                   <Minus className="w-3 h-3" />
@@ -190,7 +204,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
                 )}
                 <button
                   onClick={() => handleProgressChange(localProgress + 1)}
-                  disabled={localProgress >= userMedia.media.totalUnits || updating}
+                  disabled={localProgress >= userMedia.media.totalUnits}
                   className="w-5 h-5 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-30 transition"
                 >
                   <Plus className="w-3 h-3" />
@@ -240,7 +254,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onUpdate }) 
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {
             setIsEditModalOpen(false);
-            onUpdate();
+            onRefresh();
           }}
         />
       )}
