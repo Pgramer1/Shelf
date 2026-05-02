@@ -1,8 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { CachedReadResult, shelfService } from '../services/shelfService';
-import { HeatmapDayActivity, UserMedia, MediaType, UserMediaRequest } from '../types';
+import { shelfService } from '../services/shelfService';
+import { HeatmapDayActivity, UserMedia, MediaType } from '../types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   CollectionSortOption,
@@ -113,125 +112,20 @@ const Shelf: React.FC = () => {
     mobileCollectionViewMode,
     desktopCollectionViewMode,
   } = useAppSelector((state) => state.shelfUi);
+  const [allData, setAllData]           = useState<UserMedia[]>([]);
+  const [heatmapData, setHeatmapData]   = useState<HeatmapDayActivity[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [isShelfUsingCachedData, setIsShelfUsingCachedData] = useState(false);
+  const [isHeatmapUsingCachedData, setIsHeatmapUsingCachedData] = useState(false);
+  const [shelfLastSyncedAt, setShelfLastSyncedAt] = useState<string | null>(null);
+  const [heatmapLastSyncedAt, setHeatmapLastSyncedAt] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const searchBoxRef = useRef<HTMLDivElement | null>(null);
-  const queryClient = useQueryClient();
-
-  const shelfQuery = useQuery<CachedReadResult<UserMedia[]>>({
-    queryKey: ['shelf'],
-    queryFn: shelfService.getUserShelfCached,
-    refetchInterval: () => {
-      if (typeof document === 'undefined') return false;
-      return document.visibilityState === 'visible' ? AUTO_REFRESH_INTERVAL_MS : false;
-    },
-  });
-
-  const heatmapQuery = useQuery<CachedReadResult<HeatmapDayActivity[]>>({
-    queryKey: ['heatmap', 730],
-    queryFn: () => shelfService.getConsumptionHeatmapCached(730),
-    refetchInterval: () => {
-      if (typeof document === 'undefined') return false;
-      return document.visibilityState === 'visible' ? AUTO_REFRESH_INTERVAL_MS : false;
-    },
-  });
-
-  const updateMediaMutation = useMutation<
-    UserMedia,
-    Error,
-    { id: number; data: UserMediaRequest },
-    { previous?: CachedReadResult<UserMedia[]> }
-  >({
-    mutationFn: ({ id, data }: { id: number; data: UserMediaRequest }) => shelfService.updateMedia(id, data),
-    onMutate: async ({ id, data }: { id: number; data: UserMediaRequest }) => {
-      await queryClient.cancelQueries({ queryKey: ['shelf'] });
-      const previous = queryClient.getQueryData<CachedReadResult<UserMedia[]>>(['shelf']);
-
-      if (previous) {
-        const updatedAt = new Date().toISOString();
-        const updated = previous.data.map((item: UserMedia) => {
-          if (item.id !== id) return item;
-          return {
-            ...item,
-            progress: data.progress,
-            status: data.status,
-            rating: data.rating,
-            notes: data.notes,
-            isFavorite: data.isFavorite,
-            startedAt: data.startedAt,
-            completedAt: data.completedAt,
-            updatedAt,
-          };
-        });
-
-        queryClient.setQueryData<CachedReadResult<UserMedia[]>>(['shelf'], {
-          ...previous,
-          data: updated,
-        });
-      }
-
-      return { previous };
-    },
-    onError: (
-      _error: Error,
-      _variables: { id: number; data: UserMediaRequest },
-      context?: { previous?: CachedReadResult<UserMedia[]> }
-    ) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['shelf'], context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['shelf'] });
-      queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
-    },
-  });
-
-  const deleteMediaMutation = useMutation<
-    void,
-    Error,
-    number,
-    { previous?: CachedReadResult<UserMedia[]> }
-  >({
-    mutationFn: (id: number) => shelfService.deleteFromShelf(id),
-    onMutate: async (id: number) => {
-      await queryClient.cancelQueries({ queryKey: ['shelf'] });
-      const previous = queryClient.getQueryData<CachedReadResult<UserMedia[]>>(['shelf']);
-
-      if (previous) {
-        queryClient.setQueryData<CachedReadResult<UserMedia[]>>(['shelf'], {
-          ...previous,
-          data: previous.data.filter((item: UserMedia) => item.id !== id),
-        });
-      }
-
-      return { previous };
-    },
-    onError: (
-      _error: Error,
-      _variables: number,
-      context?: { previous?: CachedReadResult<UserMedia[]> }
-    ) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['shelf'], context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['shelf'] });
-      queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
-    },
-  });
-
-  const allData = useMemo<UserMedia[]>(() => shelfQuery.data?.data ?? [], [shelfQuery.data]);
-  const heatmapData = useMemo<HeatmapDayActivity[]>(() => heatmapQuery.data?.data ?? [], [heatmapQuery.data]);
-  const loading = shelfQuery.isLoading || heatmapQuery.isLoading;
-  const isShelfUsingCachedData = shelfQuery.data?.source === 'cache';
-  const isHeatmapUsingCachedData = heatmapQuery.data?.source === 'cache';
-  const shelfLastSyncedAt = shelfQuery.data?.cachedAt ?? null;
-  const heatmapLastSyncedAt = heatmapQuery.data?.cachedAt ?? null;
+  const isRefreshInFlightRef = useRef(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
@@ -303,6 +197,46 @@ const Shelf: React.FC = () => {
     return unique.slice(0, 6);
   }, [filteredByFacet, searchQuery]);
 
+  const loadShelfData = useCallback(async (options?: { silent?: boolean }) => {
+    if (isRefreshInFlightRef.current) {
+      return;
+    }
+
+    isRefreshInFlightRef.current = true;
+
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
+    try {
+      const [shelfResult, heatmapResult] = await Promise.all([
+        shelfService.getUserShelfCached(),
+        shelfService.getConsumptionHeatmapCached(730),
+      ]);
+      setAllData(shelfResult.data);
+      setHeatmapData(heatmapResult.data);
+
+      setIsShelfUsingCachedData(shelfResult.source === 'cache');
+      setIsHeatmapUsingCachedData(heatmapResult.source === 'cache');
+      setShelfLastSyncedAt(shelfResult.cachedAt ?? null);
+      setHeatmapLastSyncedAt(heatmapResult.cachedAt ?? null);
+    } catch (error) {
+      console.error('Failed to load shelf data:', error);
+      setIsShelfUsingCachedData(false);
+      setIsHeatmapUsingCachedData(false);
+    } finally {
+      if (!options?.silent) {
+        setLoading(false);
+      }
+
+      isRefreshInFlightRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadShelfData();
+  }, [loadShelfData]);
+
   const isUsingCachedData = useMemo(() => {
     if (activeSection === 'collection') {
       return isShelfUsingCachedData;
@@ -325,6 +259,36 @@ const Shelf: React.FC = () => {
 
     return [...timestamps].sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
   }, [activeSection, shelfLastSyncedAt, heatmapLastSyncedAt]);
+
+  useEffect(() => {
+    const refreshIfOnline = () => {
+      if (!navigator.onLine) return;
+      void loadShelfData({ silent: true });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshIfOnline();
+      }
+    };
+
+    window.addEventListener('online', refreshIfOnline);
+    window.addEventListener('focus', refreshIfOnline);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshIfOnline();
+      }
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.removeEventListener('online', refreshIfOnline);
+      window.removeEventListener('focus', refreshIfOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(intervalId);
+    };
+  }, [loadShelfData]);
 
   const lastSyncLabel = useMemo(() => {
     if (!lastSyncedAt) return null;
@@ -445,23 +409,12 @@ const Shelf: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await deleteMediaMutation.mutateAsync(id);
+      await shelfService.deleteFromShelf(id);
+      loadShelfData();
     } catch (error) {
       console.error('Failed to delete:', error);
     }
   };
-
-  const handleProgressUpdate = useCallback(
-    async (id: number, data: UserMediaRequest) => {
-      await updateMediaMutation.mutateAsync({ id, data });
-    },
-    [updateMediaMutation]
-  );
-
-  const handleRefresh = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['shelf'] });
-    void queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
-  }, [queryClient]);
 
   const typeTabs   = ['ALL', ...Object.values(MediaType)];
   const statusTabs = getStatusTabs(activeType);
@@ -518,8 +471,8 @@ const Shelf: React.FC = () => {
                 type="button"
                 onClick={() => dispatch(setShelfActiveSection('collection'))}
                 className={`w-full inline-flex items-center ${isSidebarOpen ? 'justify-start px-3' : 'justify-center'} h-11 rounded-lg text-sm font-medium transition ${activeSection === 'collection'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-surface text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-surface-hover'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
                 {isSidebarOpen && <span className="ml-2">Your Collection</span>}
@@ -529,8 +482,8 @@ const Shelf: React.FC = () => {
                 type="button"
                 onClick={() => dispatch(setShelfActiveSection('insights'))}
                 className={`w-full inline-flex items-center ${isSidebarOpen ? 'justify-start px-3' : 'justify-center'} h-11 rounded-lg text-sm font-medium transition ${activeSection === 'insights'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-surface text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-surface-hover'}`}
               >
                 <BarChart3 className="w-4 h-4" />
                 {isSidebarOpen && <span className="ml-2">Insights</span>}
@@ -591,7 +544,7 @@ const Shelf: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                    className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">Add Media</span>
@@ -599,7 +552,7 @@ const Shelf: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/profile')}
-                    className="hidden sm:inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                    className="hidden sm:inline-flex items-center gap-2 border border-primary/40 dark:border-primary/50 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 text-primary dark:text-light px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
                   >
                     <User className="w-4 h-4" />
                     <span className="hidden sm:inline">Profile</span>
@@ -607,7 +560,7 @@ const Shelf: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="inline-flex items-center justify-center sm:gap-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
+                    className="inline-flex items-center justify-center sm:gap-2 border border-mid/40 dark:border-mid/50 bg-gray-100 dark:bg-surface-hover hover:bg-gray-200 dark:hover:bg-surface-hover/90 text-mid dark:text-mid px-3 sm:px-4 h-10 rounded-lg transition whitespace-nowrap"
                     aria-label="Log out"
                     title="Log out"
                   >
@@ -765,46 +718,46 @@ const Shelf: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-surface p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Total items</p>
                           <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.total}</p>
                         </div>
-                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-primary/20 dark:text-light inline-flex items-center justify-center">
                           <BarChart3 className="h-5 w-5" />
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{insightsSummary.inProgress} in progress</p>
                     </div>
 
-                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-surface p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Favorites</p>
                           <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.favorites}</p>
                         </div>
-                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-primary/20 dark:text-light inline-flex items-center justify-center">
                           <Star className="h-5 w-5" />
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">Highlights you love most</p>
                     </div>
 
-                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-surface p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Completion rate</p>
                           <p className="text-2xl font-semibold text-gray-900 dark:text-white">{insightsSummary.completionRate.toFixed(1)}%</p>
                         </div>
-                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-primary/20 dark:text-light inline-flex items-center justify-center">
                           <CheckCircle2 className="h-5 w-5" />
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{insightsSummary.completed} completed</p>
                     </div>
 
-                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="insight-card-enter rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-surface p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Avg rating</p>
@@ -812,7 +765,7 @@ const Shelf: React.FC = () => {
                             {insightsSummary.avgRating ? insightsSummary.avgRating.toFixed(1) : '—'}
                           </p>
                         </div>
-                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-light/10 dark:text-light inline-flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 text-dark dark:bg-primary/20 dark:text-light inline-flex items-center justify-center">
                           <Clock3 className="h-5 w-5" />
                         </div>
                       </div>
@@ -873,8 +826,7 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onProgressUpdate={handleProgressUpdate}
-                              onRefresh={handleRefresh}
+                              onUpdate={loadShelfData}
                             />
                           ))}
                         </div>
@@ -885,8 +837,7 @@ const Shelf: React.FC = () => {
                               <MediaCard
                                 userMedia={item}
                                 onDelete={handleDelete}
-                                onProgressUpdate={handleProgressUpdate}
-                                onRefresh={handleRefresh}
+                                onUpdate={loadShelfData}
                               />
                             </div>
                           ))}
@@ -902,8 +853,7 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onProgressUpdate={handleProgressUpdate}
-                              onRefresh={handleRefresh}
+                              onUpdate={loadShelfData}
                             />
                           ))}
                         </div>
@@ -914,8 +864,7 @@ const Shelf: React.FC = () => {
                               key={item.id}
                               userMedia={item}
                               onDelete={handleDelete}
-                              onProgressUpdate={handleProgressUpdate}
-                              onRefresh={handleRefresh}
+                              onUpdate={loadShelfData}
                             />
                           ))}
                         </div>
@@ -932,11 +881,7 @@ const Shelf: React.FC = () => {
       {isAddModalOpen && (
         <AddMediaModal
           onClose={() => setIsAddModalOpen(false)}
-          onSuccess={() => {
-            setIsAddModalOpen(false);
-            void queryClient.invalidateQueries({ queryKey: ['shelf'] });
-            void queryClient.invalidateQueries({ queryKey: ['heatmap', 730] });
-          }}
+          onSuccess={() => { setIsAddModalOpen(false); loadShelfData(); }}
         />
       )}
 

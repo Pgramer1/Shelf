@@ -65,7 +65,7 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
   const activeShare = (activeRow.count / data.total) * 100;
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Completion Funnel</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">From backlog to finished titles</p>
 
@@ -83,7 +83,9 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
             <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip
-              cursor={{ fill: 'rgba(116, 141, 146, 0.2)' }}
+              cursor={{ fill: 'rgba(18, 78, 102, 0.18)' }}
+              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
+              labelStyle={{ color: '#D3D9D4' }}
               formatter={(value: number | string) => [`${Number(value)} title${Number(value) === 1 ? '' : 's'}`, 'Count']}
             />
             <Bar dataKey="count" radius={[10, 10, 0, 0]}>
@@ -105,7 +107,7 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
               onMouseEnter={() => setActiveStage(row.label)}
               onFocus={() => setActiveStage(row.label)}
               onClick={() => setActiveStage(row.label)}
-              className={`w-full text-left rounded-lg px-3 py-2 border transition ${isActive ? 'border-primary bg-gray-100 dark:bg-gray-700/40' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40'}`}
+              className={`w-full text-left rounded-lg px-3 py-2 border transition ${isActive ? 'border-primary/70 bg-gray-100 dark:bg-primary/20 dark:border-primary/60' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-surface-hover'}`}
             >
               <div className="text-xs">
                 <p className={`font-medium ${isActive ? 'text-dark dark:text-light' : 'text-gray-700 dark:text-gray-300'}`}>{row.label}</p>
@@ -117,11 +119,11 @@ const CompletionFunnelChart: React.FC<CompletionFunnelChartProps> = ({ allData }
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Completion Rate</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{data.completionRate.toFixed(1)}%</p>
         </div>
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Dropped</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{data.dropped}</p>
         </div>

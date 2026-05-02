@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HeatmapDayActivity } from '../types';
 
@@ -29,15 +29,16 @@ function parseDateParts(dateStr: string) {
 }
 
 function cellColor(count: number): string {
-  if (count === 0) return 'bg-gray-100 dark:bg-gray-700/60';
+  if (count === 0) return 'bg-gray-100 dark:bg-surface-hover/80';
   if (count === 1) return 'bg-primary/25 dark:bg-primary/45';
   if (count <= 3) return 'bg-primary/45 dark:bg-primary/65';
-  if (count <= 6) return 'bg-mid/60 dark:bg-mid/75';
-  return 'bg-dark/80 dark:bg-light/60';
+  if (count <= 6) return 'bg-mid/60 dark:bg-mid/80';
+  return 'bg-dark/80 dark:bg-light/70';
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; day: DayActivity } | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -147,8 +148,12 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   );
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLElement>, day: DayActivity) => {
+    if (!containerRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltip({ x: rect.left + rect.width / 2, y: rect.top - 8, day });
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const x = rect.left - containerRect.left + rect.width / 2;
+    const y = rect.top - containerRect.top - 8;
+    setTooltip({ x, y, day });
   };
 
   const formatDate = (dateStr: string) => {
@@ -165,7 +170,10 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   };
 
   return (
-    <div className="insight-card-enter bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div
+      ref={containerRef}
+      className="relative insight-card-enter bg-white dark:bg-surface rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 p-4 sm:p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover"
+    >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
         <div>
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Watch History</h3>
@@ -177,20 +185,20 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="h-8 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-2 text-gray-700 dark:text-gray-200"
+              className="h-8 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-surface-hover px-2 text-gray-700 dark:text-gray-200"
             >
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
           </label>
-          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalActiveDays} active days</span>
-          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalTitlesConsumed} titles</span>
-          <span className="insight-chip bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{totalUnitsConsumed} units</span>
+          <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalActiveDays} active days</span>
+          <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalTitlesConsumed} titles</span>
+          <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalUnitsConsumed} units</span>
         </div>
       </div>
 
-      <div className="rounded-xl p-2 border border-gray-100 dark:border-slate-600 bg-white dark:bg-gray-800">
+      <div className="rounded-xl p-2 border border-gray-100 dark:border-white/10 bg-white dark:bg-surface">
         <div className="grid gap-[2px] mb-2" style={weekGridStyle}>
           {weeks.map((_, ci) => (
             <div key={ci} className="text-center text-[9px] text-gray-400 dark:text-gray-500 leading-none truncate">
@@ -206,7 +214,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
                 <button
                   type="button"
                   key={day.date}
-                  className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary dark:hover:ring-light' : 'cursor-default'}`}
+                  className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary dark:hover:ring-primary/80' : 'cursor-default'}`}
                   onMouseEnter={(e) => handleMouseEnter(e, day)}
                   onMouseLeave={() => setTooltip(null)}
                   onClick={() => openDetails(day)}
@@ -232,10 +240,10 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
 
       {tooltip && (
         <div
-          className="fixed z-50 pointer-events-none"
+          className="absolute z-50 pointer-events-none"
           style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
         >
-          <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg px-3 py-2 shadow-md min-w-max max-w-xs">
+          <div className="bg-gray-900 dark:bg-surface-hover text-white text-xs rounded-lg px-3 py-2 shadow-md min-w-max max-w-xs border border-white/10">
             <p className="font-semibold mb-1">{formatDate(tooltip.day.date)}</p>
             {tooltip.day.count === 0 ? (
               <p className="text-gray-400">No activity</p>

@@ -105,7 +105,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
   const ratedUpdates = monthlyData.reduce((sum, point) => sum + point.count, 0);
 
   return (
-    <div className="insight-card-enter h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div className="insight-card-enter h-full bg-white dark:bg-surface rounded-xl shadow-sm border border-gray-200 dark:border-white/10 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:bg-surface-hover">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Monthly Rating Trend</h3>
@@ -114,7 +114,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
         <select
           value={selectedYear}
           onChange={(e) => setSelectedYear(Number(e.target.value))}
-          className="h-8 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-2 text-sm text-gray-700 dark:text-gray-200"
+          className="h-8 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-surface-hover px-2 text-sm text-gray-700 dark:text-gray-200"
         >
           {years.map((year) => (
             <option key={year} value={year}>{year}</option>
@@ -130,11 +130,11 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Year Avg</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{yearlyAverage.toFixed(1)}</p>
         </div>
-        <div className="rounded-lg bg-gray-100 dark:bg-gray-700 px-3 py-2">
+        <div className="rounded-lg bg-gray-100 dark:bg-surface-hover px-3 py-2">
           <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Rated Updates</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{ratedUpdates}</p>
         </div>
@@ -154,6 +154,8 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
               tickLine={false}
             />
             <Tooltip
+              contentStyle={{ backgroundColor: '#2E3944', border: '1px solid rgba(255,255,255,0.08)', color: '#D3D9D4' }}
+              labelStyle={{ color: '#D3D9D4' }}
               labelFormatter={(label: string) => `${label} ${selectedYear}`}
             />
             <ReferenceLine y={yearlyAverage} stroke="#748D92" strokeDasharray="4 4" />
@@ -180,7 +182,7 @@ const MonthlyRatingTrendChart: React.FC<MonthlyRatingTrendChartProps> = ({ allDa
             onMouseEnter={() => setActiveMonth(month)}
             onFocus={() => setActiveMonth(month)}
             onClick={() => setActiveMonth(month)}
-            className={`h-7 rounded-md text-[11px] font-medium transition ${activeMonth === month ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            className={`h-7 rounded-md text-[11px] font-medium transition ${activeMonth === month ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-surface-hover/90'}`}
           >
             {label}
           </button>
