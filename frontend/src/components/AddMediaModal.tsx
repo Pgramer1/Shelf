@@ -54,6 +54,17 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
+  const localDateTimeNow = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
   const [startDate, setStartDate] = useState<string>(todayStr());
   const [endDate, setEndDate] = useState<string>('');
 
@@ -170,6 +181,7 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
         notes: notes || undefined, isFavorite,
         startedAt: startDate ? `${startDate}T00:00:00` : undefined,
         completedAt: endDate ? `${endDate}T00:00:00` : undefined,
+        activityAt: localDateTimeNow(),
       });
       onSuccess();
     } catch (err: any) {

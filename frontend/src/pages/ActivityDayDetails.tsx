@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BookOpen, Clapperboard, Gamepad2, Tv2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Clapperboard, Gamepad2, Tv2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DayConsumption, DayConsumptionItem, MediaType } from '../types';
 import { shelfService } from '../services/shelfService';
@@ -55,6 +55,24 @@ const getTypeIcon = (mediaType: MediaType) => {
   return <Tv2 className="w-4 h-4" />;
 };
 
+const parseDateParam = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+};
+
+const toDateParam = (value: Date): string => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const shiftDateParam = (dateString: string, days: number): string => {
+  const next = parseDateParam(dateString);
+  next.setDate(next.getDate() + days);
+  return toDateParam(next);
+};
+
 const ActivityDayDetails: React.FC = () => {
   const navigate = useNavigate();
   const { date } = useParams<{ date: string }>();
@@ -90,7 +108,7 @@ const ActivityDayDetails: React.FC = () => {
 
   const formattedDate = useMemo(() => {
     if (!date) return '';
-    const d = new Date(`${date}T00:00:00`);
+    const d = parseDateParam(date);
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -98,6 +116,23 @@ const ActivityDayDetails: React.FC = () => {
       year: 'numeric',
     });
   }, [date]);
+
+  const todayDateParam = useMemo(() => toDateParam(new Date()), []);
+
+  const previousDateParam = useMemo(() => {
+    if (!date) return null;
+    return shiftDateParam(date, -1);
+  }, [date]);
+
+  const nextDateParam = useMemo(() => {
+    if (!date) return null;
+    return shiftDateParam(date, 1);
+  }, [date]);
+
+  const canGoToNextDay = useMemo(() => {
+    if (!nextDateParam) return false;
+    return nextDateParam <= todayDateParam;
+  }, [nextDateParam, todayDateParam]);
 
   const lastSyncLabel = useMemo(() => {
     if (!lastSyncedAt) return null;
@@ -127,6 +162,43 @@ const ActivityDayDetails: React.FC = () => {
           <div className="text-right">
             <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Activity Details</p>
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{formattedDate}</h1>
+            <div className="mt-2 inline-flex items-center gap-2">
+              {previousDateParam && (
+                <Link
+                  to={`/activity/${previousDateParam}`}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                  Prev day
+                </Link>
+              )}
+              {date !== todayDateParam && (
+                <Link
+                  to={`/activity/${todayDateParam}`}
+                  className="inline-flex items-center px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                >
+                  Today
+                </Link>
+              )}
+              {nextDateParam && canGoToNextDay ? (
+                <Link
+                  to={`/activity/${nextDateParam}`}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                >
+                  Next day
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                >
+                  Next day
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

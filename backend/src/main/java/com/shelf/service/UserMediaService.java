@@ -88,8 +88,9 @@ public class UserMediaService {
         }
 
         UserMedia saved = userMediaRepository.save(userMedia);
-        LocalDateTime consumedAt = saved.getCompletedAt() != null ? saved.getCompletedAt()
-                : (saved.getStartedAt() != null ? saved.getStartedAt() : LocalDateTime.now());
+        LocalDateTime consumedAt = request.getActivityAt() != null ? request.getActivityAt()
+                : (saved.getCompletedAt() != null ? saved.getCompletedAt()
+                        : (saved.getStartedAt() != null ? saved.getStartedAt() : LocalDateTime.now()));
         int addActivityProgress = Math.max(0, saved.getProgress() == null ? 0 : saved.getProgress());
         recordAddActivity(user, saved, addActivityProgress, consumedAt);
         return mapToResponse(saved);
@@ -152,7 +153,9 @@ public class UserMediaService {
         int safeDays = Math.max(1, Math.min(days, 730));
         LocalDate startDate = LocalDate.now().minusDays(safeDays - 1L);
         LocalDateTime start = startDate.atStartOfDay();
-        LocalDateTime end = LocalDateTime.now();
+        // Include a small forward window so activity logged from clients ahead of the
+        // server clock's timezone is still included in the latest day bucket.
+        LocalDateTime end = LocalDateTime.now().plusDays(1);
 
         List<ConsumptionLog> logs = consumptionLogRepository
                 .findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(user.getId(), start, end);
