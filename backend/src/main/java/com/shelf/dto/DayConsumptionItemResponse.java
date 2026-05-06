@@ -15,6 +15,9 @@ public class DayConsumptionItemResponse {
     private MediaType mediaType;
     private Boolean addOnlyActivity;
     private Integer unitsConsumed;
+    private Integer firstWatchUnitsConsumed;
+    private Integer rewatchUnitsConsumed;
+    private Boolean hasRewatchActivity;
     private Integer fromUnit;
     private Integer toUnit;
 }

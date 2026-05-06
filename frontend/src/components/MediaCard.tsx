@@ -70,6 +70,36 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onProgressUp
     }
   };
 
+  const getActiveStatusForType = () => {
+    if (userMedia.media.type === MediaType.BOOK) return Status.READING;
+    if (userMedia.media.type === MediaType.GAME) return Status.PLAYING;
+    return Status.WATCHING;
+  };
+
+  const handleStartRewatch = async () => {
+    if (updating) return;
+    setUpdating(true);
+    try {
+      const activityAt = toLocalDateTimeString(new Date());
+      await onProgressUpdate(userMedia.id, {
+        mediaId: userMedia.media.id,
+        status: getActiveStatusForType(),
+        progress: 0,
+        rating: userMedia.rating,
+        notes: userMedia.notes,
+        isFavorite: userMedia.isFavorite,
+        startedAt: activityAt,
+        activityAt,
+      });
+      setLocalProgress(0);
+      onRefresh();
+    } catch {
+      setLocalProgress(userMedia.progress);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to remove this from your shelf?')) {
       setIsDeleting(true);
@@ -166,6 +196,16 @@ const MediaCard: React.FC<MediaCardProps> = ({ userMedia, onDelete, onProgressUp
           <div className="mb-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Progress</span>
+              {userMedia.status === Status.COMPLETED && localProgress === userMedia.media.totalUnits && (
+                <button
+                  type="button"
+                  onClick={handleStartRewatch}
+                  disabled={updating}
+                  className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 disabled:opacity-50"
+                >
+                  Start Rewatch
+                </button>
+              )}
               <div className="flex items-center gap-1 min-w-0">
                 <button
                   onClick={() => handleProgressChange(localProgress - 1)}

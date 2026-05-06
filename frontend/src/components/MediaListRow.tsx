@@ -77,6 +77,37 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
     }
   };
 
+  const getActiveStatusForType = () => {
+    if (userMedia.media.type === MediaType.BOOK) return Status.READING;
+    if (userMedia.media.type === MediaType.GAME) return Status.PLAYING;
+    return Status.WATCHING;
+  };
+
+  const handleStartRewatch = async () => {
+    if (updating) return;
+    setUpdating(true);
+    setLocalProgress(0);
+
+    try {
+      const activityAt = toLocalDateTimeString(new Date());
+      await shelfService.updateMedia(userMedia.id, {
+        mediaId: userMedia.media.id,
+        status: getActiveStatusForType(),
+        progress: 0,
+        rating: userMedia.rating,
+        notes: userMedia.notes,
+        isFavorite: userMedia.isFavorite,
+        startedAt: activityAt,
+        activityAt,
+      });
+      onUpdate();
+    } catch {
+      setLocalProgress(userMedia.progress);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to remove this from your shelf?')) {
       return;
@@ -154,7 +185,19 @@ const MediaListRow: React.FC<MediaListRowProps> = ({ userMedia, onDelete, onUpda
 
           <div className="mt-2" onClick={(event) => event.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-              <span>{localProgress}/{totalUnits} {unitLabel()}</span>
+              <div className="flex items-center gap-2">
+                <span>{localProgress}/{totalUnits} {unitLabel()}</span>
+                {userMedia.status === Status.COMPLETED && localProgress === totalUnits && (
+                  <button
+                    type="button"
+                    onClick={handleStartRewatch}
+                    disabled={updating}
+                    className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 disabled:opacity-50"
+                  >
+                    Start Rewatch
+                  </button>
+                )}
+              </div>
               <div className="inline-flex items-center gap-1">
                 <button
                   type="button"

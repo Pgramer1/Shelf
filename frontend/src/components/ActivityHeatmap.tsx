@@ -6,10 +6,16 @@ interface ActivityHeatmapProps {
   activityDays: HeatmapDayActivity[];
 }
 
+type HeatmapMode = 'all' | 'first-watch' | 'rewatch';
+
 interface DayActivity {
   date: string;
-  count: number;
-  unitsConsumed: number;
+  totalTitleCount: number;
+  totalUnitsConsumed: number;
+  firstWatchTitleCount: number;
+  firstWatchUnitsConsumed: number;
+  rewatchTitleCount: number;
+  rewatchUnitsConsumed: number;
   items: string[];
 }
 
@@ -41,13 +47,19 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; day: DayActivity } | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [mode, setMode] = useState<HeatmapMode>('all');
 
   const activityMap = useMemo(() => {
-    const map = new Map<string, { count: number; unitsConsumed: number; items: string[] }>();
+    const map = new Map<string, DayActivity>();
     for (const day of activityDays) {
       map.set(day.date, {
-        count: day.titleCount,
-        unitsConsumed: day.unitsConsumed,
+        date: day.date,
+        totalTitleCount: day.titleCount,
+        totalUnitsConsumed: day.unitsConsumed,
+        firstWatchTitleCount: day.firstWatchTitleCount ?? 0,
+        firstWatchUnitsConsumed: day.firstWatchUnitsConsumed ?? 0,
+        rewatchTitleCount: day.rewatchTitleCount ?? 0,
+        rewatchUnitsConsumed: day.rewatchUnitsConsumed ?? 0,
         items: day.titles,
       });
     }
@@ -86,12 +98,18 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
       for (let i = 0; i < 7; i++) {
         const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
         const act = activityMap.get(dateStr);
-        col.push({
-          date: dateStr,
-          count: act?.count ?? 0,
-          unitsConsumed: act?.unitsConsumed ?? 0,
-          items: act?.items ?? [],
-        });
+        col.push(
+          act ?? {
+            date: dateStr,
+            totalTitleCount: 0,
+            totalUnitsConsumed: 0,
+            firstWatchTitleCount: 0,
+            firstWatchUnitsConsumed: 0,
+            rewatchTitleCount: 0,
+            rewatchUnitsConsumed: 0,
+            items: [],
+          }
+        );
         cursor.setDate(cursor.getDate() + 1);
       }
       cols.push(col);
@@ -99,7 +117,6 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
     return cols;
   }, [activityMap, selectedYear]);
 
-  // Month labels: find the first column where each month appears
   const monthLabelByColumn = useMemo(() => {
     const labels: { col: number; label: string }[] = [];
     let lastMonth = -1;
@@ -127,19 +144,28 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
     [weeks, selectedYear]
   );
 
-  const totalActiveDays = useMemo(
-    () => yearDays.filter((day) => day.count > 0).length,
-    [yearDays]
-  );
+  const getDayTitleCount = (day: DayActivity) => {
+    if (mode === 'first-watch') return day.firstWatchTitleCount;
+    if (mode === 'rewatch') return day.rewatchTitleCount;
+    return day.totalTitleCount;
+  };
+
+  const getDayUnitCount = (day: DayActivity) => {
+    if (mode === 'first-watch') return day.firstWatchUnitsConsumed;
+    if (mode === 'rewatch') return day.rewatchUnitsConsumed;
+    return day.totalUnitsConsumed;
+  };
+
+  const totalActiveDays = useMemo(() => yearDays.filter((day) => getDayTitleCount(day) > 0).length, [yearDays, mode]);
 
   const totalTitlesConsumed = useMemo(
-    () => yearDays.reduce((sum, day) => sum + day.count, 0),
-    [yearDays]
+    () => yearDays.reduce((sum, day) => sum + getDayTitleCount(day), 0),
+    [yearDays, mode]
   );
 
   const totalUnitsConsumed = useMemo(
-    () => yearDays.reduce((sum, day) => sum + day.unitsConsumed, 0),
-    [yearDays]
+    () => yearDays.reduce((sum, day) => sum + getDayUnitCount(day), 0),
+    [yearDays, mode]
   );
 
   const weekGridStyle = useMemo(
@@ -163,21 +189,20 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
   };
 
   const openDetails = (day: DayActivity) => {
-    if (day.count === 0) {
+    if (getDayTitleCount(day) === 0) {
       return;
     }
     navigate(`/activity/${day.date}`);
   };
 
+  const modeLabel = mode === 'all' ? 'all activity' : mode === 'first-watch' ? 'first watch' : 'rewatch';
+
   return (
-    <div
-      ref={containerRef}
-      className="relative insight-card insight-card-enter"
-    >
+    <div ref={containerRef} className="relative insight-card insight-card-enter">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
         <div>
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Watch History</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Based only on actual progress updates in {selectedYear}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Progress activity in {selectedYear}, filtered to {modeLabel}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
           <label className="inline-flex items-center gap-2">
@@ -188,10 +213,26 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
               className="h-8 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-surface-hover px-2 text-gray-700 dark:text-gray-200"
             >
               {availableYears.map((year) => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
           </label>
+
+          <label className="inline-flex items-center gap-2">
+            <span className="text-gray-500 dark:text-gray-400">Mode</span>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as HeatmapMode)}
+              className="h-8 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-surface-hover px-2 text-gray-700 dark:text-gray-200"
+            >
+              <option value="all">All</option>
+              <option value="first-watch">First Watch</option>
+              <option value="rewatch">Rewatch</option>
+            </select>
+          </label>
+
           <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalActiveDays} active days</span>
           <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalTitlesConsumed} titles</span>
           <span className="insight-chip bg-gray-100 dark:bg-surface-hover text-gray-600 dark:text-gray-200">{totalUnitsConsumed} units</span>
@@ -210,24 +251,25 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
         <div className="grid gap-[2px]" style={weekGridStyle}>
           {weeks.map((col, ci) => (
             <div key={ci} className="grid grid-rows-7 gap-[2px]">
-              {col.map((day) => (
-                <button
-                  type="button"
-                  key={day.date}
-                  className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(day.count)} ${day.count > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary dark:hover:ring-primary/80' : 'cursor-default'}`}
-                  onMouseEnter={(e) => handleMouseEnter(e, day)}
-                  onMouseLeave={() => setTooltip(null)}
-                  onClick={() => openDetails(day)}
-                  aria-label={day.count === 0 ? `${day.date}: no activity` : `${day.date}: ${day.count} title updates, open details`}
-                />
-              ))}
+              {col.map((day) => {
+                const modeCount = getDayTitleCount(day);
+                return (
+                  <button
+                    type="button"
+                    key={day.date}
+                    className={`w-full aspect-square min-w-0 rounded-[2px] transition-all ${cellColor(modeCount)} ${modeCount > 0 ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-primary dark:hover:ring-primary/80' : 'cursor-default'}`}
+                    onMouseEnter={(e) => handleMouseEnter(e, day)}
+                    onMouseLeave={() => setTooltip(null)}
+                    onClick={() => openDetails(day)}
+                    aria-label={modeCount === 0 ? `${day.date}: no activity` : `${day.date}: ${modeCount} title updates, open details`}
+                  />
+                );
+              })}
             </div>
           ))}
         </div>
 
-        <div className="mt-2 text-[9px] text-gray-400 dark:text-gray-500">
-          {DAYS.join(' · ')}
-        </div>
+        <div className="mt-2 text-[9px] text-gray-400 dark:text-gray-500">{DAYS.join(' | ')}</div>
       </div>
 
       <div className="flex items-center gap-1.5 mt-3 justify-end">
@@ -239,26 +281,25 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ activityDays }) => {
       </div>
 
       {tooltip && (
-        <div
-          className="absolute z-50 pointer-events-none"
-          style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
-        >
+        <div className="absolute z-50 pointer-events-none" style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}>
           <div className="bg-gray-900 dark:bg-surface-hover text-white text-xs rounded-lg px-3 py-2 shadow-md min-w-max max-w-xs border border-white/10">
             <p className="font-semibold mb-1">{formatDate(tooltip.day.date)}</p>
-            {tooltip.day.count === 0 ? (
+            {tooltip.day.totalTitleCount === 0 ? (
               <p className="text-gray-400">No activity</p>
             ) : (
               <>
                 <p className="text-gray-300 mb-1">
-                  {tooltip.day.count} title{tooltip.day.count > 1 ? 's' : ''} updated, {tooltip.day.unitsConsumed} unit{tooltip.day.unitsConsumed > 1 ? 's' : ''}
+                  {tooltip.day.totalTitleCount} title{tooltip.day.totalTitleCount > 1 ? 's' : ''} updated, {tooltip.day.totalUnitsConsumed} unit{tooltip.day.totalUnitsConsumed > 1 ? 's' : ''}
                 </p>
+                <p className="text-gray-300">First watch: {tooltip.day.firstWatchTitleCount} title{tooltip.day.firstWatchTitleCount > 1 ? 's' : ''}, {tooltip.day.firstWatchUnitsConsumed} unit{tooltip.day.firstWatchUnitsConsumed > 1 ? 's' : ''}</p>
+                <p className="text-gray-300 mb-1">Rewatch: {tooltip.day.rewatchTitleCount} title{tooltip.day.rewatchTitleCount > 1 ? 's' : ''}, {tooltip.day.rewatchUnitsConsumed} unit{tooltip.day.rewatchUnitsConsumed > 1 ? 's' : ''}</p>
                 <ul className="space-y-0.5">
                   {tooltip.day.items.slice(0, 5).map((title) => (
-                    <li key={title} className="text-gray-200 truncate">· {title}</li>
+                    <li key={title} className="text-gray-200 truncate">
+                      - {title}
+                    </li>
                   ))}
-                  {tooltip.day.items.length > 5 && (
-                    <li className="text-gray-400">+{tooltip.day.items.length - 5} more</li>
-                  )}
+                  {tooltip.day.items.length > 5 && <li className="text-gray-400">+{tooltip.day.items.length - 5} more</li>}
                 </ul>
               </>
             )}

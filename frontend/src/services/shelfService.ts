@@ -113,14 +113,14 @@ export const shelfService = {
   },
 
   async getConsumptionHeatmapCached(days = 371): Promise<CachedReadResult<HeatmapDayActivity[]>> {
-    return readWithFallback(`heatmap-${days}`, async () => {
+    return readWithFallback(`heatmap-v2-${days}`, async () => {
       const response = await api.get<HeatmapDayActivity[]>(`/shelf/activity/heatmap?days=${days}`);
       return response.data;
     });
   },
 
   async getConsumptionByDateCached(date: string): Promise<CachedReadResult<DayConsumption>> {
-    return readWithFallback(`day-${date}`, async () => {
+    return readWithFallback(`day-v2-${date}`, async () => {
       const response = await api.get<DayConsumption>(`/shelf/activity/${date}`);
       return response.data;
     });

@@ -12,5 +12,8 @@ public interface ConsumptionLogRepository extends JpaRepository<ConsumptionLog, 
     List<ConsumptionLog> findByUser_IdAndConsumedAtBetweenOrderByConsumedAtAsc(Long userId, LocalDateTime start,
             LocalDateTime end);
 
+    boolean existsByUserMedia_IdAndProgressToGreaterThanEqualAndConsumedAtBefore(Long userMediaId, Integer progressTo,
+            LocalDateTime consumedAt);
+
     long deleteByUserMedia_Id(Long userMediaId);
 }

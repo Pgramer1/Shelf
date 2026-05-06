@@ -39,6 +39,15 @@ public class Media {
 
     private Integer releaseYear;
 
+    @Column(length = 50)
+    private String source;
+
+    @Column(length = 255)
+    private String sourceId;
+
+    @Column(length = 512)
+    private String normalizedKey;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

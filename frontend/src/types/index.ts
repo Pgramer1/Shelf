@@ -153,6 +153,8 @@ export interface MediaRequest {
   imageUrl?: string;
   description?: string;
   releaseYear?: number;
+  source?: string;
+  sourceId?: string;
 }
 
 export interface UserMediaRequest {
@@ -172,6 +174,10 @@ export interface HeatmapDayActivity {
   titleCount: number;
   unitsConsumed: number;
   titles: string[];
+  firstWatchTitleCount: number;
+  firstWatchUnitsConsumed: number;
+  rewatchTitleCount: number;
+  rewatchUnitsConsumed: number;
 }
 
 export interface DayConsumptionItem {
@@ -181,6 +187,9 @@ export interface DayConsumptionItem {
   mediaType: MediaType;
   addOnlyActivity: boolean;
   unitsConsumed: number;
+  firstWatchUnitsConsumed: number;
+  rewatchUnitsConsumed: number;
+  hasRewatchActivity: boolean;
   fromUnit: number;
   toUnit: number;
 }

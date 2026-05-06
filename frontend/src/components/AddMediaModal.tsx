@@ -29,6 +29,8 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
   const [releaseYear, setReleaseYear] = useState<number | undefined>();
+  const [selectedSource, setSelectedSource] = useState<string | undefined>();
+  const [selectedSourceId, setSelectedSourceId] = useState<string | undefined>();
 
   // shelf state
   const [status, setStatus] = useState<Status>(Status.PLAN_TO_WATCH);
@@ -101,24 +103,38 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
       }).catch(() => setLoadingSeasons(false));
       return;
     }
-    applyResult(result.title, result.type, result.totalUnits, result.imageUrl, result.description, result.releaseYear);
+    applyResult(
+      result.title,
+      result.type,
+      result.totalUnits,
+      result.imageUrl,
+      result.description,
+      result.releaseYear,
+      result.source,
+      result.externalId
+    );
   };
 
   const applyResult = (
     t: string, tp: MediaType, units: number,
     img?: string, desc?: string, year?: number,
+    source?: string, sourceId?: string,
   ) => {
     setTitle(t); setType(tp); setTotalUnits(units);
     setImageUrl(img || ''); setDescription(desc || ''); setReleaseYear(year);
+    setSelectedSource(source);
+    setSelectedSourceId(sourceId);
     setStatus(getDefaultStatus(tp));
     setStep(2);
   };
 
   const selectSeason = (show: SearchResult, season: TVSeason) => {
     const seasonTitle = `${show.title} — Season ${season.seasonNumber}`;
+    const seasonSourceId = `${show.externalId}-S${season.seasonNumber}`;
     applyResult(
       seasonTitle, MediaType.TV_SERIES, season.episodeCount,
       season.posterUrl || show.imageUrl, show.description, season.airYear || show.releaseYear,
+      show.source, seasonSourceId,
     );
     setPendingTVShow(null);
   };
@@ -130,6 +146,8 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
     setImageUrl('');
     setDescription('');
     setReleaseYear(undefined);
+    setSelectedSource(undefined);
+    setSelectedSourceId(undefined);
     setStatus(getDefaultStatus(searchType));
     setStep(1);
   };
@@ -144,6 +162,8 @@ const AddMediaModal: React.FC<AddMediaModalProps> = ({ onClose, onSuccess }) => 
         imageUrl: imageUrl || undefined,
         description: description || undefined,
         releaseYear: releaseYear || undefined,
+        source: selectedSource || undefined,
+        sourceId: selectedSourceId || undefined,
       });
       await shelfService.addToShelf({
         mediaId: media.id, status, progress, rating,

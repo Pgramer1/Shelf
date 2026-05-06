@@ -36,6 +36,18 @@ const getRangeLabel = (item: DayConsumptionItem) => {
   return `${item.unitsConsumed} ${unitLabel} watched (${item.fromUnit}-${item.toUnit})`;
 };
 
+const getBreakdownLabel = (item: DayConsumptionItem) => {
+  if (item.addOnlyActivity) {
+    return null;
+  }
+
+  if (item.hasRewatchActivity) {
+    return `${item.firstWatchUnitsConsumed} first-watch units, ${item.rewatchUnitsConsumed} rewatch units`;
+  }
+
+  return `${item.firstWatchUnitsConsumed} first-watch units`;
+};
+
 const getTypeIcon = (mediaType: MediaType) => {
   if (mediaType === MediaType.BOOK) return <BookOpen className="w-4 h-4" />;
   if (mediaType === MediaType.GAME) return <Gamepad2 className="w-4 h-4" />;
@@ -140,7 +152,7 @@ const ActivityDayDetails: React.FC = () => {
           </div>
         ) : data ? (
           <>
-            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Titles Consumed</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.totalTitles}</p>
@@ -148,6 +160,12 @@ const ActivityDayDetails: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Units</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.totalUnits}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Rewatch Units</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.items.reduce((sum, item) => sum + item.rewatchUnitsConsumed, 0)}
+                </p>
               </div>
             </div>
 
@@ -161,6 +179,9 @@ const ActivityDayDetails: React.FC = () => {
                     <div>
                       <h3 className="text-base font-semibold text-gray-900 dark:text-white">{item.title}</h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{getRangeLabel(item)}</p>
+                      {getBreakdownLabel(item) && (
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{getBreakdownLabel(item)}</p>
+                      )}
                     </div>
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary/20 text-dark dark:bg-primary/40 dark:text-light">
                       {getTypeIcon(item.mediaType)}

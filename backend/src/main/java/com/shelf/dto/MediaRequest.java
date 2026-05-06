@@ -22,4 +22,6 @@ public class MediaRequest {
     private String imageUrl;
     private String description;
     private Integer releaseYear;
+    private String source;
+    private String sourceId;
 }

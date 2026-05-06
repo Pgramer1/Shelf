@@ -14,4 +14,8 @@ public class ActivityHeatmapDayResponse {
     private Integer titleCount;
     private Integer unitsConsumed;
     private List<String> titles;
+    private Integer firstWatchTitleCount;
+    private Integer firstWatchUnitsConsumed;
+    private Integer rewatchTitleCount;
+    private Integer rewatchUnitsConsumed;
 }

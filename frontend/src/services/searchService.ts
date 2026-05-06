@@ -3,6 +3,7 @@ import { MediaType } from '../types';
 
 export interface SearchResult {
   externalId: string;
+  source: string;
   title: string;
   type: MediaType;
   totalUnits: number;
@@ -48,6 +49,7 @@ const searchAnime = async (query: string): Promise<SearchResult[]> => {
   });
   return res.data.data.map((item: any) => ({
     externalId: String(item.mal_id),
+    source: 'JIKAN',
     title: item.title_english || item.title,
     type: MediaType.ANIME,
     totalUnits: item.episodes || 1,
@@ -65,6 +67,7 @@ const searchMovies = async (query: string): Promise<SearchResult[]> => {
   });
   return res.data.results.slice(0, 10).map((item: any) => ({
     externalId: String(item.id),
+    source: 'TMDB_MOVIE',
     title: item.title,
     type: MediaType.MOVIE,
     totalUnits: 1,
@@ -81,6 +84,7 @@ const searchTVSeries = async (query: string): Promise<SearchResult[]> => {
   });
   return res.data.results.slice(0, 10).map((item: any) => ({
     externalId: String(item.id),
+    source: 'TMDB_TV',
     title: item.name,
     type: MediaType.TV_SERIES,
     totalUnits: item.number_of_episodes || item.episode_run_time?.[0] || 1,
@@ -97,6 +101,7 @@ const searchBooks = async (query: string): Promise<SearchResult[]> => {
   });
   return res.data.docs.map((item: any) => ({
     externalId: item.key,
+    source: 'OPEN_LIBRARY',
     title: item.title,
     type: MediaType.BOOK,
     totalUnits: item.number_of_pages_median || 1,
@@ -114,6 +119,7 @@ const searchGames = async (query: string): Promise<SearchResult[]> => {
   });
   return res.data.results.map((item: any) => ({
     externalId: String(item.id),
+    source: 'RAWG',
     title: item.name,
     type: MediaType.GAME,
     totalUnits: item.playtime || 10, // hours of playtime

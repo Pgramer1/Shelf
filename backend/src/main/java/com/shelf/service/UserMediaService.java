@@ -24,8 +24,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -128,11 +130,16 @@ public class UserMediaService {
             userMedia.setCompletedAt(request.getCompletedAt());
         } else if (request.getStatus() == Status.COMPLETED && userMedia.getCompletedAt() == null) {
             userMedia.setCompletedAt(LocalDateTime.now());
+        } else if (request.getStatus() != Status.COMPLETED && nextProgress < previousProgress) {
+            // Reset completion marker when progress is intentionally rolled back for a
+            // rewatch/reread replay cycle.
+            userMedia.setCompletedAt(null);
         }
 
         LocalDateTime consumedAt = request.getActivityAt() != null ? request.getActivityAt() : LocalDateTime.now();
-        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, consumedAt,
-                ConsumptionEventType.PROGRESS);
+        ConsumptionEventType progressEventType = determineProgressEventType(userMedia, previousProgress, nextProgress,
+                consumedAt);
+        recordConsumptionIfProgressed(user, userMedia, previousProgress, nextProgress, consumedAt, progressEventType);
 
         UserMedia updated = userMediaRepository.save(userMedia);
         return mapToResponse(updated);
@@ -157,16 +164,34 @@ public class UserMediaService {
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> {
                     Set<String> titles = new HashSet<>();
+                    Set<String> firstWatchTitles = new HashSet<>();
+                    Set<String> rewatchTitles = new HashSet<>();
                     int unitsConsumed = 0;
+                    int firstWatchUnitsConsumed = 0;
+                    int rewatchUnitsConsumed = 0;
                     for (ConsumptionLog log : entry.getValue()) {
-                        titles.add(log.getUserMedia().getMedia().getTitle());
+                        String title = log.getUserMedia().getMedia().getTitle();
+                        titles.add(title);
                         unitsConsumed += log.getUnitsConsumed();
+
+                        if (log.getEventType() == ConsumptionEventType.REWATCH_PROGRESS) {
+                            rewatchTitles.add(title);
+                            rewatchUnitsConsumed += log.getUnitsConsumed();
+                            continue;
+                        }
+
+                        firstWatchTitles.add(title);
+                        firstWatchUnitsConsumed += log.getUnitsConsumed();
                     }
                     return new ActivityHeatmapDayResponse(
                             entry.getKey().toString(),
                             titles.size(),
                             unitsConsumed,
-                            titles.stream().sorted().collect(Collectors.toList()));
+                            titles.stream().sorted().collect(Collectors.toList()),
+                            firstWatchTitles.size(),
+                            firstWatchUnitsConsumed,
+                            rewatchTitles.size(),
+                            rewatchUnitsConsumed);
                 })
                 .collect(Collectors.toList());
     }
@@ -188,9 +213,17 @@ public class UserMediaService {
                 .map(mediaLogs -> {
                     mediaLogs.sort(Comparator.comparing(ConsumptionLog::getConsumedAt));
                     ConsumptionLog first = mediaLogs.get(0);
-                    boolean addOnlyActivity = mediaLogs.stream()
-                            .allMatch(log -> log.getEventType() == ConsumptionEventType.ADD);
                     int unitsConsumed = mediaLogs.stream().mapToInt(ConsumptionLog::getUnitsConsumed).sum();
+                    boolean addOnlyActivity = unitsConsumed == 0 && mediaLogs.stream()
+                            .allMatch(log -> log.getEventType() == ConsumptionEventType.ADD);
+                    int firstWatchUnitsConsumed = mediaLogs.stream()
+                            .filter(log -> log.getEventType() != ConsumptionEventType.REWATCH_PROGRESS)
+                            .mapToInt(ConsumptionLog::getUnitsConsumed)
+                            .sum();
+                    int rewatchUnitsConsumed = mediaLogs.stream()
+                            .filter(log -> log.getEventType() == ConsumptionEventType.REWATCH_PROGRESS)
+                            .mapToInt(ConsumptionLog::getUnitsConsumed)
+                            .sum();
                     int fromUnit = mediaLogs.stream().mapToInt(ConsumptionLog::getProgressFrom).min().orElse(0) + 1;
                     int toUnit = mediaLogs.stream().mapToInt(ConsumptionLog::getProgressTo).max().orElse(0);
 
@@ -201,6 +234,9 @@ public class UserMediaService {
                             first.getUserMedia().getMedia().getType(),
                             addOnlyActivity,
                             unitsConsumed,
+                            firstWatchUnitsConsumed,
+                            rewatchUnitsConsumed,
+                            rewatchUnitsConsumed > 0,
                             Math.max(fromUnit, 1),
                             toUnit);
                 })
@@ -216,7 +252,7 @@ public class UserMediaService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return userMediaRepository.findByUserId(user.getId()).stream()
+        return dedupeUserMediaEntries(userMediaRepository.findByUserId(user.getId())).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -225,7 +261,7 @@ public class UserMediaService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return userMediaRepository.findByUserIdAndStatus(user.getId(), status).stream()
+        return dedupeUserMediaEntries(userMediaRepository.findByUserIdAndStatus(user.getId(), status)).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -305,5 +341,96 @@ public class UserMediaService {
         log.setEventType(eventType == null ? ConsumptionEventType.PROGRESS : eventType);
         log.setConsumedAt(consumedAt == null ? LocalDateTime.now() : consumedAt);
         consumptionLogRepository.save(log);
+    }
+
+    private ConsumptionEventType determineProgressEventType(UserMedia userMedia, Integer previousProgress,
+            Integer nextProgress, LocalDateTime consumedAt) {
+        int from = previousProgress == null ? 0 : previousProgress;
+        int to = nextProgress == null ? 0 : nextProgress;
+        if (to <= from) {
+            return ConsumptionEventType.PROGRESS;
+        }
+
+        if (!isRewatchProgressEvent(userMedia, consumedAt)) {
+            return ConsumptionEventType.PROGRESS;
+        }
+
+        return ConsumptionEventType.REWATCH_PROGRESS;
+    }
+
+    private boolean isRewatchProgressEvent(UserMedia userMedia, LocalDateTime consumedAt) {
+        Integer totalUnits = userMedia.getMedia().getTotalUnits();
+        if (totalUnits == null || totalUnits <= 0 || userMedia.getId() == null) {
+            return false;
+        }
+
+        LocalDateTime effectiveConsumedAt = consumedAt == null ? LocalDateTime.now() : consumedAt;
+        return consumptionLogRepository.existsByUserMedia_IdAndProgressToGreaterThanEqualAndConsumedAtBefore(
+                userMedia.getId(),
+                totalUnits,
+                effectiveConsumedAt);
+    }
+
+    private List<UserMedia> dedupeUserMediaEntries(List<UserMedia> entries) {
+        Map<String, UserMedia> unique = new LinkedHashMap<>();
+        for (UserMedia entry : entries) {
+            String key = buildUserMediaIdentityKey(entry);
+            UserMedia existing = unique.get(key);
+            if (existing == null || isMoreRecent(entry, existing)) {
+                unique.put(key, entry);
+            }
+        }
+
+        return unique.values().stream()
+                .sorted(Comparator.comparing(UserMedia::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .collect(Collectors.toList());
+    }
+
+    private boolean isMoreRecent(UserMedia candidate, UserMedia existing) {
+        LocalDateTime candidateUpdatedAt = candidate.getUpdatedAt();
+        LocalDateTime existingUpdatedAt = existing.getUpdatedAt();
+        if (candidateUpdatedAt == null && existingUpdatedAt == null) {
+            return candidate.getId() != null && existing.getId() != null && candidate.getId() > existing.getId();
+        }
+        if (candidateUpdatedAt == null) {
+            return false;
+        }
+        if (existingUpdatedAt == null) {
+            return true;
+        }
+
+        return candidateUpdatedAt.isAfter(existingUpdatedAt);
+    }
+
+    private String buildUserMediaIdentityKey(UserMedia userMedia) {
+        if (userMedia.getMedia() == null) {
+            return "missing-media:" + userMedia.getId();
+        }
+
+        String source = normalizeMediaIdentityPart(userMedia.getMedia().getSource());
+        String sourceId = normalizeMediaIdentityPart(userMedia.getMedia().getSourceId());
+        if (!source.isBlank() && !sourceId.isBlank()) {
+            return "src|" + source + "|" + sourceId;
+        }
+
+        String normalizedKey = normalizeMediaIdentityPart(userMedia.getMedia().getNormalizedKey());
+        if (!normalizedKey.isBlank()) {
+            return "norm|" + normalizedKey;
+        }
+
+        String type = userMedia.getMedia().getType() == null ? "" : userMedia.getMedia().getType().name();
+        String title = normalizeMediaIdentityPart(userMedia.getMedia().getTitle());
+        String year = userMedia.getMedia().getReleaseYear() == null ? "" : String.valueOf(userMedia.getMedia().getReleaseYear());
+        String totalUnits = userMedia.getMedia().getTotalUnits() == null ? "" : String.valueOf(userMedia.getMedia().getTotalUnits());
+        String imageUrl = normalizeMediaIdentityPart(userMedia.getMedia().getImageUrl());
+        return "fallback|" + type + "|" + title + "|" + year + "|" + totalUnits + "|" + imageUrl;
+    }
+
+    private String normalizeMediaIdentityPart(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 }
