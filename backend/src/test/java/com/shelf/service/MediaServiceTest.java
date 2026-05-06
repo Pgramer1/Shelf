@@ -17,10 +17,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class MediaServiceTest {
@@ -87,5 +89,53 @@ class MediaServiceTest {
         media.setTotalUnits(totalUnits);
         media.setReleaseYear(releaseYear);
         return media;
+    }
+
+    @Test
+    void getMediaById_includesSourceIdentityFields() {
+        Media media = buildMedia(99L, "Horimiya", MediaType.ANIME, 13, 2021);
+        media.setSource("JIKAN");
+        media.setSourceId("42897");
+        when(mediaRepository.findById(99L)).thenReturn(Optional.of(media));
+
+        MediaResponse response = mediaService.getMediaById(99L);
+
+        assertEquals("JIKAN", response.getSource());
+        assertEquals("42897", response.getSourceId());
+    }
+
+    @Test
+    void getAllMedia_includesSourceIdentityFields() {
+        Media media = buildMedia(11L, "Interstellar", MediaType.MOVIE, 1, 2014);
+        media.setSource("TMDB_MOVIE");
+        media.setSourceId("157336");
+        when(mediaRepository.findAll()).thenReturn(List.of(media));
+
+        List<MediaResponse> response = mediaService.getAllMedia();
+
+        assertEquals(1, response.size());
+        assertEquals("TMDB_MOVIE", response.get(0).getSource());
+        assertEquals("157336", response.get(0).getSourceId());
+    }
+
+    @Test
+    void searchMedia_includesSourceIdentityFields() {
+        Media media = buildMedia(12L, "Arcane", MediaType.TV_SERIES, 9, 2021);
+        media.setSource("TMDB_TV");
+        media.setSourceId("94605");
+        when(mediaRepository.findByTitleContainingIgnoreCase("arc")).thenReturn(List.of(media));
+
+        List<MediaResponse> response = mediaService.searchMedia("arc");
+
+        assertEquals(1, response.size());
+        assertEquals("TMDB_TV", response.get(0).getSource());
+        assertEquals("94605", response.get(0).getSourceId());
+    }
+
+    @Test
+    void getMediaById_whenMissing_throwsNotFound() {
+        when(mediaRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> mediaService.getMediaById(404L));
     }
 }

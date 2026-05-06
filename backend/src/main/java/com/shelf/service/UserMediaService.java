@@ -294,7 +294,9 @@ public class UserMediaService {
                 userMedia.getMedia().getTotalUnits(),
                 userMedia.getMedia().getImageUrl(),
                 userMedia.getMedia().getDescription(),
-                userMedia.getMedia().getReleaseYear());
+                userMedia.getMedia().getReleaseYear(),
+                userMedia.getMedia().getSource(),
+                userMedia.getMedia().getSourceId());
 
         return new UserMediaResponse(
                 userMedia.getId(),

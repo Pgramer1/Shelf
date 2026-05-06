@@ -27,6 +27,8 @@ export interface Media {
   imageUrl?: string;
   description?: string;
   releaseYear?: number;
+  source?: string;
+  sourceId?: string;
 }
 
 export type RatingScope = 'GLOBAL' | 'FRIENDS';

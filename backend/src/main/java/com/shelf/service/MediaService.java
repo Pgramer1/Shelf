@@ -145,7 +145,9 @@ public class MediaService {
                 media.getTotalUnits(),
                 media.getImageUrl(),
                 media.getDescription(),
-                media.getReleaseYear());
+                media.getReleaseYear(),
+                media.getSource(),
+                media.getSourceId());
     }
 
     private Optional<Media> findBySource(String source, String sourceId) {
